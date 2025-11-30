@@ -17,4 +17,4 @@ config/icon="res://icon.svg"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/package_builder/plugin.cfg")
+enabled=PackedStringArray("res://addons/gdpackages/plugin.cfg")

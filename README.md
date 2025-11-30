@@ -21,13 +21,14 @@ A lightweight, opinionated framework for creating modular, isolated packages in 
 - Supports **messages, warnings, handled errors, and unhandled errors with stack trace**.
 - Exists in memory using a circular buffer.
 - Configurable stack trace depth.
-- Congifurable buffer size.
+- Configurable buffer size.
 - Configurable verbosity.
 
 ### Package Orchestration
-- `PackageOrchestrator` manages global package registry, package groups, and lifecycle.
+- `PackageManager` manages global package registry, package groups, and lifecycle.
 - Supports message propagation to all packages or specific groups.
 - Designed to work seamlessly with `.pck` files for modular runtime loading.
+- `Package` scripts are `Node`s, so you can insert them into the tree if you desire.
 
 ---
 
