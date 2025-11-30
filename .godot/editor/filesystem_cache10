@@ -1,7 +1,7 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1764540804
+::res://::1764541036
 icon.svg::CompressedTexture2D::2207028686208746228::1764205893::1764540815::1::::<><><>0<>0<>de040de3e92bb87cff013e3ca2a61eb2<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
-README.md::TextFile::-1::1764540574::0::1::::<><><>0<>0<><>::
+README.md::TextFile::-1::1764540947::0::1::::<><><>0<>0<><>::
 ::res://addons/::1764540620
 ::res://addons/gdpackages/::1764540613
 plugin.cfg::TextFile::-1::1764540613::0::1::::<><><>0<>0<><>::
@@ -10,9 +10,9 @@ package.gd::GDScript::3061102717279117378::1764535983::0::1::::Package<>Node<><>
 package_adapter.gd::GDScript::2746231935720360309::1764530502::0::1::::PackageAdapter<>RefCounted<><>0<>0<><>::
 package_logger.gd::GDScript::166381839541601665::1764536570::0::1::::PackageLogger<>RefCounted<><>0<>0<><>::
 package_manager.gd::GDScript::8974877446355267299::1764539225::0::1::::PackageManager<>Node<><>0<>0<><>::
-::res://addons/gdpackages/example/::1764540625
+::res://addons/gdpackages/example/::1764540966
 main.gd::GDScript::622853205327987977::1764539291::0::1::::<>Control<><>0<>0<><>::
-main.tscn::PackedScene::4309589581776460601::1764540625::0::1::::<><><>0<>0<><>::uid://i4ykij8a4bnd::::res://addons/gdpackages/example/main.gd
+main.tscn::PackedScene::4309589581776460601::1764540966::0::1::::<><><>0<>0<><>::uid://i4ykij8a4bnd::::res://addons/gdpackages/example/main.gd
 ::res://addons/gdpackages/example/packages/::1764538748
 ::res://addons/gdpackages/example/packages/example/::1764538808
 example.gd::GDScript::2421899471088693240::1764538808::0::1::::<>Package<><>0<>0<><>::
