@@ -52,13 +52,16 @@ func apply_freeze() -> void:
 	
 	_freeze_timer.wait_time = FREEZE_DURATION
 	_freeze_timer.one_shot = true
-	_freeze_timer.timeout.connect(_on_freeze_ended)
+	if not _freeze_timer.timeout.is_connected(_on_freeze_ended):
+		_freeze_timer.timeout.connect(_on_freeze_ended)
 	_freeze_timer.start()
 	print("[StatusEffectPackageCore] Заморозка применена на %.1f сек" % FREEZE_DURATION)
 
 func _on_freeze_ended() -> void:
 	print("[StatusEffectPackageCore] Заморозка окончена")
 	_is_frozen = false
+	if _freeze_timer and _freeze_timer.timeout.is_connected(_on_freeze_ended):
+		_freeze_timer.timeout.disconnect(_on_freeze_ended)
 	_package.emit_event("status.freeze_removed", {})
 
 func apply_poison() -> void:
@@ -78,21 +81,20 @@ func apply_poison() -> void:
 	
 	_poison_timer.wait_time = POISON_DURATION
 	_poison_timer.one_shot = true
-	_poison_timer.timeout.connect(Callable(self, "_on_poison_ended"))
+	# Проверяем, не подключен ли уже сигнал
+	if not _poison_timer.timeout.is_connected(Callable(self, "_on_poison_ended")):
+		_poison_timer.timeout.connect(Callable(self, "_on_poison_ended"))
 	_poison_timer.start()
 	
 	# Таймер для ежесекундного урона
 	if not _poison_damage_timer:
 		_poison_damage_timer = Timer.new()
 		add_child(_poison_damage_timer)
-	else:
-		# Если таймер уже существует, отключаем старые подключения
-		if _poison_damage_timer.timeout.is_connected(Callable(self, "_on_poison_tick")):
-			_poison_damage_timer.timeout.disconnect(Callable(self, "_on_poison_tick"))
-		_poison_damage_timer.stop()
 	
 	_poison_damage_timer.wait_time = 1.0
-	_poison_damage_timer.timeout.connect(Callable(self, "_on_poison_tick"))
+	# Проверяем, не подключен ли уже сигнал
+	if not _poison_damage_timer.timeout.is_connected(Callable(self, "_on_poison_tick")):
+		_poison_damage_timer.timeout.connect(Callable(self, "_on_poison_tick"))
 	_poison_damage_timer.start()
 	print("[StatusEffectPackageCore] Яд применен на %.1f сек" % POISON_DURATION)
 
@@ -105,6 +107,8 @@ func _on_poison_ended() -> void:
 	print("[StatusEffectPackageCore] Яд окончен")
 	_is_poisoned = false
 	if _poison_damage_timer:
+		if _poison_damage_timer.timeout.is_connected(Callable(self, "_on_poison_tick")):
+			_poison_damage_timer.timeout.disconnect(Callable(self, "_on_poison_tick"))
 		_poison_damage_timer.stop()
 	_package.emit_event("status.poison_removed", {})
 
