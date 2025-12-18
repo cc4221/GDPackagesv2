@@ -1,8 +1,4 @@
-extends Package # input_package
-## InputPackage - Input management
-## Handles key presses 1,2,3,4
-## Emits events: input.attack, input.heal, input.freeze, input.poison
-## Does not contain game logic
+extends Package
 
 const Adapter = preload("input_package_adapter.gd")
 const Core = preload("src/input_package_core.gd")

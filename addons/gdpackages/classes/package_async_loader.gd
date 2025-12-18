@@ -1,81 +1,61 @@
-# PackageAsyncLoader handles asynchronous loading of packages to prevent blocking the main thread
-# It processes packages in batches, respecting frame limits to maintain performance
 class_name PackageAsyncLoader extends Node
 
-# Preload the PackageConfig class
 const PackageConfig = preload("res://addons/gdpackages/classes/package_config.gd")
 
-# Reference to the PackageEventBus for emitting events during loading
 var PackageEventBus = null
 
-# Signals emitted during the loading process
-signal package_load_started(package_name: String)        # Emitted when a package starts loading
-signal package_loaded(package: Package)                   # Emitted when a package finishes loading successfully
-signal package_load_failed(package_name: String, error_message: String) # Emitted when a package fails to load
-signal batch_load_progress(current: int, total: int)      # Emitted during batch loading to show progress
-signal batch_load_completed                               # Emitted when all packages in a batch have been processed
+signal package_load_started(package_name: String)
+signal package_loaded(package: Package)
+signal package_load_failed(package_name: String, error_message: String)
+signal batch_load_progress(current: int, total: int)
+signal batch_load_completed
 
-# Configuration options for controlling the loading behavior
-@export var max_packages_per_frame: int = 1               # Maximum number of packages to load per frame to maintain performance
-@export var process_in_physics_frame: bool = false        # Whether to process loading in physics frame instead of regular frame
+@export var max_packages_per_frame: int = 1
+@export var process_in_physics_frame: bool = false
 
-# Cached references to frequently used dictionaries for optimization
-# Using cached references avoids repeated access to static PackageManager variables
-# and improves performance when frequently accessing this data
 static var _packages_cache = PackageManager.packages
 static var _package_groups_cache = PackageManager.package_groups
 static var _group_bit_registry_cache = PackageManager.group_bit_registry
 static var _package_masks_cache = PackageManager.package_masks
 static var _adapters_cache = PackageManager._adapters
 
-# Internal state variables for tracking batch loading progress
-var _batch_load_queue: Array[Dictionary] = []             # Queue of packages waiting to be loaded
-var _current_batch_total: int = 0                         # Total number of packages in the current batch
-var _current_batch_loaded: int = 0                        # Number of packages loaded so far in the current batch
-var _loading_batch: bool = false                          # Whether a batch load operation is currently in progress
-var _dependencies_to_load: Array[String] = []             # Dependencies that need to be loaded
+var _batch_load_queue: Array[Dictionary] = []
+var _current_batch_total: int = 0
+var _current_batch_loaded: int = 0
+var _loading_batch: bool = false
+var _dependencies_to_load: Array[String] = []
 
-# Cache of package configurations to improve performance
 var _config_cache: Dictionary = {}
-# Maximum size of the configuration cache
 var _max_config_cache_size: int = 100
 
-# Method to get a package configuration using caching
 func _get_package_config_cached(directory: String) -> Dictionary:
 	if _config_cache.has(directory):
 		return _config_cache[directory]
 	
 	var config := _get_package_config(directory)
 	
-	# Managing the cache size
 	if _config_cache.size() >= _max_config_cache_size:
-		# Remove old cache items if the limit is exceeded
 		var keys = _config_cache.keys()
-		_config_cache.erase(keys[0])  # Удаляем первый элемент (_FIFO)
-	
+		_config_cache.erase(keys[0])
+
 	_config_cache[directory] = config
 	return config
 
-# Initialize the async loader
 func _ready() -> void:
 	pass
 
-# Process function called every frame to handle batch loading
 func _process(delta: float) -> void:
 	if not process_in_physics_frame:
 		_process_batch_load(delta)
 		
-	# Initialize PackageEventBus if not already set
 	if PackageEventBus == null:
 		if ClassDB.class_exists("PackageEventBus"):
 			PackageEventBus = preload("res://addons/gdpackages/classes/package_event_bus.gd")
 
-# Physics process function called every physics frame to handle batch loading
 func _physics_process(delta: float) -> void:
 	if process_in_physics_frame:
 		_process_batch_load(delta)
 
-# Add a package to the async loading queue
 func queue_package_for_async_load(package_path: String, group: String = "") -> void:
 	var queue_item = {
 		"path": package_path,
@@ -84,11 +64,9 @@ func queue_package_for_async_load(package_path: String, group: String = "") -> v
 	}
 	_batch_load_queue.append(queue_item)
 	
-	# If loading is not in progress, start the batch loading
 	if not _loading_batch:
 		start_batch_load()
 
-# Start loading multiple packages asynchronously in a batch
 func load_packages_async(package_paths: PackedStringArray, group: String = "") -> void:
 	for path in package_paths:
 		queue_package_for_async_load(path, group)
@@ -96,7 +74,6 @@ func load_packages_async(package_paths: PackedStringArray, group: String = "") -
 	if not _loading_batch:
 		start_batch_load()
 
-# Begin the batch loading process
 func start_batch_load() -> void:
 	if _batch_load_queue.is_empty():
 		return
@@ -105,14 +82,11 @@ func start_batch_load() -> void:
 	_current_batch_total = _batch_load_queue.size()
 	_current_batch_loaded = 0
 
-# Process packages in the batch load queue
 func _process_batch_load(_delta: float) -> void:
-	# Process completed threaded loads
 	_process_completed_loads()
 	
 	if not _loading_batch or _batch_load_queue.is_empty():
 		if _loading_batch and _batch_load_queue.is_empty():
-			# Check if we still have threaded requests in progress
 			if _threaded_load_requests.is_empty():
 				_loading_batch = false
 				batch_load_completed.emit()
@@ -122,20 +96,16 @@ func _process_batch_load(_delta: float) -> void:
 	
 	var processed_count: int = 0
 	
-	# Process up to max_packages_per_frame packages per frame to maintain performance
 	while processed_count < max_packages_per_frame and not _batch_load_queue.is_empty():
 		var load_info = _batch_load_queue[0]
 		
-		# First load dependencies if they haven't been loaded yet
 		if not load_info.dependencies_loaded:
 			if _load_dependencies_async(load_info.path):
 				load_info.dependencies_loaded = true
 			else:
-				# If dependencies couldn't be loaded, move this package to the back of the queue
 				_batch_load_queue.push_back(_batch_load_queue.pop_front())
 				continue
 		else:
-			# Load the package itself - now returns false if loading is in progress
 			var result = _load_single_package_async(load_info.path, load_info.group)
 			if result:
 				_batch_load_queue.pop_front()
@@ -143,58 +113,45 @@ func _process_batch_load(_delta: float) -> void:
 				batch_load_progress.emit(_current_batch_loaded, _current_batch_total)
 				if PackageEventBus:
 					PackageEventBus.emit("package_async_load_progress", {"current": _current_batch_loaded, "total": _current_batch_total, "percentage": float(_current_batch_loaded) / float(_current_batch_total) * 100.0}, "PackageAsyncLoader")
-			# If result is false, it means loading is in progress, so we leave it in the queue
-			# The actual completion will be handled in _process_completed_loads()
 	
 		processed_count += 1
 
-# Process completed threaded loads
 func _process_completed_loads() -> void:
 	var completed_requests = []
 	var requests_count = _threaded_load_requests.size()
-	
-	# Optimize processing with a large number of requests
+
 	if requests_count > 0:
 		var request_ids = _threaded_load_requests.keys()
 		for request_id in request_ids:
 			if not _threaded_load_requests.has(request_id):
-				continue  # Пропускаем, если элемент был удален в процессе
-				
+				continue
+
 			var request_info = _threaded_load_requests[request_id]
 			var status = ResourceLoader.load_threaded_get_status(request_id)
 			
 			if status == ResourceLoader.THREAD_LOAD_LOADED:
-				# Handle the loaded resource based on the request type
 				var loaded_resource = ResourceLoader.load_threaded_get(request_id)
 				
 				if loaded_resource:
 					if request_info.type == "main_script":
-						# Complete the package loading process
 						_finish_package_load(request_info, loaded_resource)
 					elif request_info.type == "adapter":
-						# Complete the adapter loading process
 						_finish_adapter_load(request_info, loaded_resource)
 				else:
-					# Handle error
 					package_load_failed.emit(request_info.package_path, "Failed to load " + request_info.type + " script")
 					if PackageEventBus:
 						PackageEventBus.emit("package_async_load_failed", {"package_name": request_info.package_path, "error": "Failed to load " + request_info.type + " script"}, "PackageAsyncLoader")
-				# Mark this request for removal
 				completed_requests.append(request_id)
 				
 			elif status == ResourceLoader.THREAD_LOAD_FAILED:
-				# Handle error
 				package_load_failed.emit(request_info.package_path, "Failed to load " + request_info.type + " script")
 				if PackageEventBus:
 					PackageEventBus.emit("package_async_load_failed", {"package_name": request_info.package_path, "error": "Failed to load " + request_info.type + " script"}, "PackageAsyncLoader")
-				# Mark this request for removal
 				completed_requests.append(request_id)
 	
-	# Remove completed requests
 	for request_id in completed_requests:
 		_threaded_load_requests.erase(request_id)
 
-# Finish loading a package after the threaded load is complete
 func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 	var package_path = request_info.package_path
 	var group = request_info.group
@@ -202,14 +159,12 @@ func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 	
 	var package_name: String = config.get("name", "")
 	
-	# Check if package is already loaded
 	if PackageManager.has_package(package_name):
 		package_loaded.emit(_packages_cache[package_name])
 		if PackageEventBus:
 			PackageEventBus.emit("package_async_load_completed", {"package": _packages_cache[package_name], "package_name": package_name}, "PackageAsyncLoader")
 		return
 
-	# Create the package instance
 	var result = loaded_resource.new()
 	if not result is Package:
 		package_load_failed.emit(package_path, "Package script does not extend Package class: " + package_path.path_join(config.get("script", "")))
@@ -217,10 +172,8 @@ func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 			PackageEventBus.emit("package_async_load_failed", {"package_name": package_path, "error": "Package script does not extend Package class: " + package_path.path_join(config.get("script", ""))}, "PackageAsyncLoader")
 		return
 
-	# Register the package with the PackageManager
 	_packages_cache[package_name] = result
 	
-	# Add package to group if specified
 	if not group.is_empty():
 		_package_groups_cache.get_or_add(group, PackedStringArray()).append(package_name)
 	if _group_bit_registry_cache.has(group):
@@ -230,17 +183,13 @@ func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 
 	_add_package_to_tree_safe(result)
 
-	# Set the package configuration and initialize adapter if specified
 	result._config = config
 	
-	# Handle adapter loading if specified
 	var local_adapter_path = config.get("adapter", "")
 	if not local_adapter_path.is_empty():
 		var adapter_path_full = package_path.path_join(local_adapter_path)
-		# Use threaded loading for the adapter script
 		ResourceLoader.load_threaded_request(adapter_path_full, "", true, ResourceLoader.CACHE_MODE_REUSE)
 		
-		# Store the request info for later processing
 		var adapter_request_id = adapter_path_full
 		_threaded_load_requests[adapter_request_id] = {
 			"package_path": package_path,
@@ -249,13 +198,10 @@ func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 			"package_instance": result,
 			"type": "adapter"
 		}
-		# We'll complete the package loading after the adapter is loaded
 		return
 
-	# Call the loaded callback on the package
 	result._loaded()
 
-	# Connect to the ready_complete signal if the package has it
 	if result.has_signal("ready_complete"):
 		result.ready_complete.connect(func():
 			package_loaded.emit(result)
@@ -267,14 +213,12 @@ func _finish_package_load(request_info: Dictionary, loaded_resource) -> void:
 		if PackageEventBus:
 			PackageEventBus.emit("package_async_load_completed", {"package": result, "package_name": result.config_get_name()}, "PackageAsyncLoader")
 	
-	# Increment the loaded counter only if there are no adapters to load
 	if local_adapter_path.is_empty():
 		_current_batch_loaded += 1
 		batch_load_progress.emit(_current_batch_loaded, _current_batch_total)
 		if PackageEventBus:
 			PackageEventBus.emit("package_async_load_progress", {"current": _current_batch_loaded, "total": _current_batch_total, "percentage": float(_current_batch_loaded) / float(_current_batch_total) * 100.0}, "PackageAsyncLoader")
 
-# Finish loading an adapter after the threaded load is complete
 func _finish_adapter_load(request_info: Dictionary, loaded_resource) -> void:
 	var package_path = request_info.package_path
 	var group = request_info.group
@@ -283,7 +227,6 @@ func _finish_adapter_load(request_info: Dictionary, loaded_resource) -> void:
 	
 	var package_name: String = config.get("name", "")
 	
-	# Create the adapter instance and attach it to the package
 	var adapter_instance = null
 	if loaded_resource:
 		adapter_instance = loaded_resource.new(package_name)
@@ -291,10 +234,8 @@ func _finish_adapter_load(request_info: Dictionary, loaded_resource) -> void:
 			package_instance.adapter = adapter_instance
 			_adapters_cache[package_name] = adapter_instance
 
-	# Call the loaded callback on the package
 	package_instance._loaded()
 
-	# Connect to the ready_complete signal if the package has it
 	if package_instance.has_signal("ready_complete"):
 		package_instance.ready_complete.connect(func():
 			package_loaded.emit(package_instance)
@@ -306,13 +247,11 @@ func _finish_adapter_load(request_info: Dictionary, loaded_resource) -> void:
 		if PackageEventBus:
 			PackageEventBus.emit("package_async_load_completed", {"package": package_instance, "package_name": package_instance.config_get_name()}, "PackageAsyncLoader")
 	
-	# Increment the loaded counter
 	_current_batch_loaded += 1
 	batch_load_progress.emit(_current_batch_loaded, _current_batch_total)
 	if PackageEventBus:
 		PackageEventBus.emit("package_async_load_progress", {"current": _current_batch_loaded, "total": _current_batch_total, "percentage": float(_current_batch_loaded) / float(_current_batch_total) * 100.0}, "PackageAsyncLoader")
 
-# Load dependencies for a package asynchronously
 func _load_dependencies_async(package_path: String) -> bool:
 	var config := _get_package_config_cached(package_path)
 	if config.is_empty():
@@ -336,10 +275,8 @@ func _load_dependencies_async(package_path: String) -> bool:
 
 	return true
 
-# Dictionary to track threaded loading requests
 var _threaded_load_requests: Dictionary = {}
 
-# Load a single package asynchronously
 func _load_single_package_async(package_path: String, group: String = "") -> bool:
 	package_load_started.emit(package_path)
 	if PackageEventBus:
@@ -366,14 +303,12 @@ func _load_single_package_async(package_path: String, group: String = "") -> boo
 
 	var package_name: String = config.get("name", "")
 	
-	# Check if package is already loaded
 	if PackageManager.has_package(package_name):
 		package_loaded.emit(PackageManager.packages[package_name])
 		if PackageEventBus:
 			PackageEventBus.emit("package_async_load_completed", {"package": PackageManager.packages[package_name], "package_name": package_name}, "PackageAsyncLoader")
 		return true
 
-	# Use threaded loading for the main package script
 	var script_path: String = package_path.path_join(config.get("script", ""))
 	if not FileAccess.file_exists(script_path):
 		package_load_failed.emit(package_path, "Package script file does not exist: " + script_path)
@@ -381,10 +316,8 @@ func _load_single_package_async(package_path: String, group: String = "") -> boo
 			PackageEventBus.emit("package_async_load_failed", {"package_name": package_path, "error": "Package script file does not exist: " + script_path}, "PackageAsyncLoader")
 		return false
 
-	# Start threaded loading of the package script
 	ResourceLoader.load_threaded_request(script_path, "", true, ResourceLoader.CACHE_MODE_REUSE)
 	
-	# Store the request info for later processing
 	var request_id = script_path
 	_threaded_load_requests[request_id] = {
 		"package_path": package_path,
@@ -393,20 +326,15 @@ func _load_single_package_async(package_path: String, group: String = "") -> boo
 		"type": "main_script"
 	}
 	
-	# For this implementation, we'll return false to indicate that loading is still in progress
-	# and will be handled in the next frame when the resource is loaded
 	return false
 
-# Get the configuration for a package - first try Resource, then fallback to JSON
 func _get_package_config(directory: String) -> Dictionary:
-	# Try to load from Resource file first
 	var resource_path: String = directory.path_join("package_config.tres")
 	if FileAccess.file_exists(resource_path):
 		var config_resource = ResourceLoader.load(resource_path, "Resource", ResourceLoader.CACHE_MODE_IGNORE) as PackageConfig
 		if config_resource:
 			return config_resource.to_dict()
 	
-	# Fallback to JSON file
 	var json_path: String = directory.path_join("package.json")
 	if FileAccess.file_exists(json_path):
 		var text: String = FileAccess.get_file_as_string(json_path)
@@ -418,14 +346,12 @@ func _get_package_config(directory: String) -> Dictionary:
 
 	return {}
 
-# Load the root script file for a package and return an instance of it
 func _get_package_root(directory: String, config: Dictionary) -> Package:
 	var path: String = directory.path_join(config.get("script", ""))
 	if not FileAccess.file_exists(path):
 		push_error("Package script file does not exist: " + path)
 		return null
 	
-	# Use standard ResourceLoader.load for direct loading (when not using the async system)
 	var loaded_resource = ResourceLoader.load(path)
 	if loaded_resource == null:
 		push_error("Failed to load package script: " + path)
@@ -438,11 +364,9 @@ func _get_package_root(directory: String, config: Dictionary) -> Package:
 		push_error("Package script does not extend Package class: " + path)
 		return null
 
-# Check if a batch loading operation is currently in progress
 func is_loading() -> bool:
 	return _loading_batch
 
-# Get the progress of the current batch loading operation
 func get_load_progress() -> Dictionary:
 	if _current_batch_total == 0:
 		return {"current": 0, "total": 0, "percentage": 0.0}
@@ -454,21 +378,17 @@ func get_load_progress() -> Dictionary:
 		"percentage": percentage
 	}
 
-# Clear the loading queue and reset loading state
 func clear_load_queue() -> void:
 	_batch_load_queue.clear()
 	_loading_batch = false
 	_current_batch_total = 0
 	_current_batch_loaded = 0
 
-# Safe method to add a package to the scene tree
 func _add_package_to_tree_safe(package_node: Node) -> void:
 	var root = Engine.get_main_loop().get_root()
-	# Check if the node is already added to the tree
 	if package_node.get_parent() != null:
-		return # Уже в дереве
+		return 
 		
-	# Check if adding a node with this name is already planned
 	var node_name = package_node.name if package_node.name != "" else str(package_node.get_instance_id())
 	if not root.has_node(node_name):
 		root.call_deferred("add_child", package_node)

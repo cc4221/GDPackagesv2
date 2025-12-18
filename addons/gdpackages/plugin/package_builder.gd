@@ -1,30 +1,22 @@
-# PackageBuilder is an editor plugin that provides tools for creating new packages
-# It adds context menu options in the Godot editor to create packages and package-related files
 @tool
 extends EditorPlugin
 
-# Preload the PackageConfig class
 const PackageConfig = preload("res://addons/gdpackages/classes/package_config.gd")
-# Preload the GDPackageValidator class
 const GDPackageValidator = preload("res://addons/gdpackages/classes/gd_package_validator.gd")
 
-# Preloaded resources for creating packages
 const PackageCreateDialog = preload("package_create_dialog.tscn")
 const PackageContextMenuPlugin = preload("package_context_menu_plugin.gd")
 
-# Instance variables for the plugin
 var dialog: ConfirmationDialog
 var ctx: EditorContextMenuPlugin
 var last_file_path: String
 
-# Initialize the plugin when added to the editor
 func _enter_tree():
 	ctx = PackageContextMenuPlugin.new()
 	ctx.pressed.connect(_on_create_package_pressed)
 	ctx.create_src_script.connect(_on_create_src_script_pressed)
 	add_context_menu_plugin(EditorContextMenuPlugin.CONTEXT_SLOT_FILESYSTEM_CREATE, ctx)
 
-# Clean up the plugin when removed from the editor
 func _exit_tree() -> void:
 	if dialog:
 		if dialog.get_parent():
@@ -35,7 +27,6 @@ func _exit_tree() -> void:
 		remove_context_menu_plugin(ctx)
 	ctx = null
 
-# Create a new package configuration as Resource
 func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, pkg_deps: Array = []) -> PackageConfig:
 	print("Creating new PackageConfig resource...")
 	var config := PackageConfig.new()
@@ -50,14 +41,12 @@ func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, p
 	print("Set script_path: ", pkg_name + ".gd")
 	config.adapter_path = pkg_name + "_adapter.gd"
 	print("Set adapter_path: ", pkg_name + "_adapter.gd")
-	# Convert Array to PackedStringArray for dependencies
 	config.dependencies = PackedStringArray(pkg_deps)
 	print("Set dependencies: ", PackedStringArray(pkg_deps))
 	
 	print("PackageConfig resource ready: ", config)
 	return config
 
-# Helper function to determine the type of value
 func _get_type_index(value) -> int:
 	if value is int:
 		return 1
@@ -66,9 +55,8 @@ func _get_type_index(value) -> int:
 	elif value is bool:
 		return 3
 	else:
-		return 0  # default to float
+		return 0
 
-# Template for package scripts
 const PACKAGE_TEMPLATE = """extends Package # {name}
 
 const Adapter = preload("{name}_adapter.gd")
@@ -99,18 +87,15 @@ func _handled_error(_identity: String, _msg: String) -> void:
 	pass
 """
 
-# Generate the content for a new package script
 func _new_package_script(pkg_name: String, pkg_desc: String) -> String:
 	return PACKAGE_TEMPLATE.format({"name": pkg_name})
 
-# Generate the content for a new package adapter script
 func _new_package_adapter_script(pkg_name: String) -> String:
 	var result: String = "extends PackageAdapter"
 	result += "\n\nfunc _init(owner_name: String = \"\") -> void:"
 	result += "\n\t_owner_package_name = owner_name"
 	return result
 
-# Generate the content for a new package core script in the src directory
 func _new_package_src_script(pkg_name: String) -> String:
 	var result: String = "extends RefCounted"
 	result += "\n\nclass_name " + pkg_name.capitalize().replace(" ", "") + "Core"
@@ -118,23 +103,19 @@ func _new_package_src_script(pkg_name: String) -> String:
 	result += "\n\tprint(\"Example method called from " + pkg_name + " core\")"
 	return result
 
-# Handle the event when "Package" is selected from the context menu
 func _on_create_package_pressed(option: Array):
 	if option.is_empty():
 		return
 	
-	# Create dialog instance if it doesn't exist
 	if not dialog:
 		dialog = PackageCreateDialog.instantiate()
 		dialog.create.connect(_on_package_created)
-		# Add the dialog to the base control of the editor so it's properly managed
 		var base_control = get_editor_interface().get_base_control()
 		base_control.add_child(dialog)
 	
 	dialog.set_package_path(option[0])
 	dialog.popup_centered(Vector2i(500, 300))
 
-# Handle the event when "GD Script (Package Src)" is selected from the context menu
 func _on_create_src_script_pressed(option: Array):
 	if option.is_empty():
 		return
@@ -158,18 +139,11 @@ func _on_create_src_script_pressed(option: Array):
 			print("Created src script: ", parent_dir.path_join(package_name + "_core.gd"))
 		else:
 			push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
-			# Close dialog after error
-			if dialog:
-				dialog.hide()
 		
 		get_editor_interface().get_resource_filesystem().scan()
 	else:
 		push_error("[PackageBuilderPlugin] Not a src directory: ", parent_dir)
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 
-# Handle the event when a package is created through the dialog
 func _on_package_created(package_path: String, package_name: String, package_version: String, package_desc: String, package_deps: Array) -> void:
 	print("creating package: ", package_name)
 	print("at path: ", package_path)
@@ -183,7 +157,6 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 	var config: PackageConfig = _new_package_config(package_name, package_version, package_desc, package_deps)
 	print("Config after _new_package_config call: ", config.to_dict())
 	
-	# Debug prints to understand what's in the config
 	print("Config type: ", config.get_class())
 	print("Config name: ", config.name)
 	print("Config version: ", config.version)
@@ -192,15 +165,11 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 	print("Config adapter_path: ", config.adapter_path)
 	print("Config dependencies: ", config.dependencies)
 
-	# Save the Resource as .tres file
 	print("Attempting to save Resource to: ", path.path_join("package_config.tres"))
 	var save_error = ResourceSaver.save(config, path.path_join("package_config.tres"))
 	print("Save result: ", save_error)
 	if save_error != OK:
 		push_error("[PackageBuilderPlugin] failed to create package config resource file, error code: " + str(save_error))
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 	else:
 		print("Created package config: ", path.path_join("package_config.tres"))
 
@@ -210,9 +179,6 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package main script, open error: ", FileAccess.get_open_error())
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 
 	file = FileAccess.open(path.path_join(package_name + "_adapter.gd"), FileAccess.WRITE)
 	if FileAccess.get_open_error() == OK:
@@ -220,18 +186,12 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package adapter script, open error: ", FileAccess.get_open_error())
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 
 	dir.make_dir(path.path_join("src"))
 	
 	var src_dir_new = DirAccess.open(path.path_join("src"))
 	if src_dir_new.get_open_error() != OK:
 		push_error("[PackageBuilderPlugin] failed to open src directory: ", path.path_join("src"))
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 		return
 	
 	file = FileAccess.open(path.path_join("src").path_join(package_name + "_core.gd"), FileAccess.WRITE)
@@ -240,13 +200,9 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
-		# Close dialog after error
-		if dialog:
-			dialog.hide()
 
 	get_editor_interface().get_resource_filesystem().scan()
 	
-	# Validate the created package
 	var validation_result = GDPackageValidator.validate_package_complete(path)
 	if not validation_result.is_valid:
 		push_warning("Package validation failed for '" + package_name + "':")

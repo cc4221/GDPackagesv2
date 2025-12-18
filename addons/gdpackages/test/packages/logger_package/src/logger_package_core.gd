@@ -1,6 +1,4 @@
 extends Node
-## LoggerPackageCore - Core logging system
-## Listens and logs all key events
 
 class_name LoggerPackageCore
 
@@ -9,34 +7,28 @@ var _package: Package = null
 func set_package_reference(package: Package) -> void:
 	_package = package
 	print("[LoggerPackageCore] set_package_reference() called, package: ", package.config_get_name())
-	# Subscribe to all key events
 	_subscribe_to_events()
 	print("[LoggerPackageCore] Subscriptions established")
 
 func _subscribe_to_events() -> void:
-	# Input events
 	_package.subscribe_to_event("input.attack", Callable(self, "_log_input_event").bind("ATTACK"))
 	_package.subscribe_to_event("input.heal", Callable(self, "_log_input_event").bind("HEAL"))
 	_package.subscribe_to_event("input.freeze", Callable(self, "_log_input_event").bind("FREEZE"))
 	_package.subscribe_to_event("input.poison", Callable(self, "_log_input_event").bind("POISON"))
 	
-	# Player events
 	_package.subscribe_to_event("player.request_attack", Callable(self, "_log_player_action").bind("REQUEST_ATTACK"))
 	_package.subscribe_to_event("player.request_heal", Callable(self, "_log_player_action").bind("REQUEST_HEAL"))
 	_package.subscribe_to_event("player.state_changed", Callable(self, "_log_state_changed"))
 	
-	# Health events
 	_package.subscribe_to_event("health.changed", Callable(self, "_log_health_changed"))
 	_package.subscribe_to_event("health.take_damage", Callable(self, "_log_health_take_damage"))
 	_package.subscribe_to_event("player.died", Callable(self, "_log_player_died"))
 	
-	# Status effects events
 	_package.subscribe_to_event("status.freeze_applied", Callable(self, "_log_effect_applied").bind("FREEZE"))
 	_package.subscribe_to_event("status.freeze_removed", Callable(self, "_log_effect_removed").bind("FREEZE"))
 	_package.subscribe_to_event("status.poison_applied", Callable(self, "_log_effect_applied").bind("POISON"))
 	_package.subscribe_to_event("status.poison_removed", Callable(self, "_log_effect_removed").bind("POISON"))
 	
-	# Weapon events
 	_package.subscribe_to_event("weapon.loaded", Callable(self, "_log_weapon_loaded"))
 
 func _log_input_event(data: Variant, action: String) -> void:
@@ -47,7 +39,7 @@ func _log_player_action(data: Variant, action: String) -> void:
 
 func _log_state_changed(data: Variant) -> void:
 	if data is Dictionary:
-		print("[PLAYER] State changed: %s → %s" % [data.get("from", "?"), data.get("to", "?")])
+		print("[PLAYER] State change: %s → %s" % [data.get("from", "?"), data.get("to", "?")])
 
 func _log_health_changed(data: Variant) -> void:
 	if data is Dictionary:
@@ -58,7 +50,7 @@ func _log_health_changed(data: Variant) -> void:
 		if is_poison:
 			print("[HEALTH] Damage from poison: HP = %d/%d" % [hp, max_hp])
 		elif data.has("damage"):
-			print("[HEALTH] Damage taken (%d): HP = %d/%d" % [data.get("damage"), hp, max_hp])
+			print("[HEALTH] Received damage (%d): HP = %d/%d" % [data.get("damage"), hp, max_hp])
 		elif data.has("healed"):
 			print("[HEALTH] Healed (%d): HP = %d/%d" % [data.get("healed"), hp, max_hp])
 		else:
@@ -80,7 +72,7 @@ func _log_effect_applied(data: Variant, effect_name: String) -> void:
 	print("[STATUS] Effect applied: %s (duration: %.1f sec)" % [effect_name, duration])
 
 func _log_effect_removed(data: Variant, effect_name: String) -> void:
-	print("[STATUS] Effect ended: %s" % effect_name)
+	print("[STATUS] Effect completed: %s" % effect_name)
 
 func _log_weapon_loaded(data: Variant) -> void:
 	if data is Dictionary:

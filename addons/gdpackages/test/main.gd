@@ -1,14 +1,12 @@
 extends Node2D
-## Entry point for the GDPackages-based demo RPG system
 
 func _ready() -> void:
 	print("\n========== GDPackages RPG System Demo ==========\n")
 	print("Initializing packages...")
 	
-	# Loading all packages from the directory
 	PackageManager.load_packages_in_directory("res://addons/gdpackages/test/packages/")
 	
-	print("\n========== System Initialized ==========")
+	print("\n========== System initialized ==========")
 	print("\nControls:")
 	print("  [1] - Attack self")
 	print("  [2] - Heal self")
@@ -16,14 +14,12 @@ func _ready() -> void:
 	print("  [4] - Apply poison")
 	print("\n=========================================\n")
 	
-	# Give a small delay before initializing package switcher
 	await get_tree().process_frame
 	_initialize_package_connections()
 	_add_packages_to_scene()
 
 func _add_packages_to_scene() -> void:
-	## Adding packages to the scene tree so they receive input events
-	print("[DEBUG] Starting to add packages to the scene")
+	print("[DEBUG] Starting to add packages to scene")
 	print("[DEBUG] Total packages: ", PackageManager.packages.keys().size())
 	for package_name in PackageManager.packages.keys():
 		var package = PackageManager.get_package(package_name)
@@ -33,8 +29,7 @@ func _add_packages_to_scene() -> void:
 			print("[SCENE] Package %s added to scene" % package_name)
 
 func _initialize_package_connections() -> void:
-	## Setting up connection between packages after loading
-	print("[DEBUG] Starting initialization of connections between packages")
+	print("[DEBUG] Starting package connection initialization")
 	
 	var health_pkg = PackageManager.get_package("health_package")
 	var weapon_pkg = PackageManager.get_package("weapon_package")
@@ -50,14 +45,11 @@ func _initialize_package_connections() -> void:
 		print("Error: not all packages loaded!")
 		return
 	
-	# All connections are now established through events, no need for direct calls
-	print("[INIT] Connections between packages established via events")
+	print("[INIT] Package connections established through events")
 
 func _get_package_core(package: Package):
-	## Helper function to get the package core
 	for child in package.get_children():
 		if child.get_script():
-			# Check if this is the package core
 			if "set_package_reference" in child:
 				return child
 	return null

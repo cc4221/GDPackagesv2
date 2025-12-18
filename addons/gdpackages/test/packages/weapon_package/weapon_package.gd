@@ -1,7 +1,5 @@
-extends Package # weapon_package
-## WeaponPackage - Weapon Management
-## Asynchronously loads .tres weapon resource
-## Provides damage and healing multipliers
+extends Package 
+
 
 const Adapter = preload("weapon_package_adapter.gd")
 const Core = preload("src/weapon_package_core.gd")
@@ -14,8 +12,8 @@ func _loaded() -> void:
 	add_child(_core)
 	_core.set_package_reference(self)
 	_core.name = "WeaponPackageCore"
-	
-	# Establish connection with adapter
+
+
 	var adapter_instance = Adapter.new()
 	adapter_instance.set_weapon_core(_core)
 	adapter = adapter_instance

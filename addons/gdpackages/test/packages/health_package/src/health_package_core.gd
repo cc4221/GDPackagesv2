@@ -1,26 +1,22 @@
 extends Node
-## HealthPackageCore - Core health system
-## Stores HP and handles damage/healing
-## No FSM logic or effects
 
 class_name HealthPackageCore
 
 const MAX_HP = 100
-const MIN_HP = 1  # Яд не может убить
+const MIN_HP = 1
 
 var _package: Package = null
 var _current_hp: int = MAX_HP
-var _weapon_adapter: PackageAdapter = null  # Reference to weapon adapter
+var _weapon_adapter: PackageAdapter = null
 
 func set_package_reference(package: Package) -> void:
 	_package = package
-	print("[HealthPackageCore] set_package_reference() вызвана, пакет: ", package.config_get_name())
-	# Subscribe to events from PlayerPackage and status effects
+	print("[HealthPackageCore] set_package_reference() called, package: ", package.config_get_name())
 	print("[HealthPackageCore] Subscribing to player.request_attack and player.request_heal...")
 	_package.subscribe_to_event("player.request_attack", Callable(self, "_on_player_request_attack"))
 	_package.subscribe_to_event("player.request_heal", Callable(self, "_on_player_request_heal"))
 	_package.subscribe_to_event("health.take_damage", Callable(self, "_on_health_take_damage"))
-	print("[HealthPackageCore] Subscriptions set up")
+	print("[HealthPackageCore] Subscriptions established")
 
 func set_weapon_adapter(adapter) -> void:
 	_weapon_adapter = adapter
@@ -28,7 +24,6 @@ func set_weapon_adapter(adapter) -> void:
 
 func _on_player_request_attack(_data: Variant = null) -> void:
 	print("[HealthPackageCore] player.request_attack received")
-	## Player attacks themselves
 	var damage = 10
 	if _weapon_adapter and _weapon_adapter.is_ready():
 		damage = int(damage * _weapon_adapter.get_damage_multiplier())
@@ -36,29 +31,26 @@ func _on_player_request_attack(_data: Variant = null) -> void:
 	else:
 		print("[HealthPackageCore] WeaponAdapter not ready or null, using base value")
 	
-	print("[HealthPackageCore] Applying damage: ", damage)
+	print("[HealthPackageCore] Dealing damage: ", damage)
 	take_damage(damage)
 
 func _on_player_request_heal(_data: Variant = null) -> void:
 	print("[HealthPackageCore] player.request_heal received")
-	## Player heals themselves
 	var heal_amount = 15
 	if _weapon_adapter and _weapon_adapter.is_ready():
 		heal_amount = int(heal_amount * _weapon_adapter.get_heal_multiplier())
-		print("[HealthPackageCore] Heal multiplier from weapon_adapter: ", _weapon_adapter.get_heal_multiplier())
+		print("[HealthPackageCore] Healing multiplier from weapon_adapter: ", _weapon_adapter.get_heal_multiplier())
 	else:
 		print("[HealthPackageCore] WeaponAdapter not ready or null, using base value")
 	
 	print("[HealthPackageCore] Healing by: ", heal_amount)
 	heal(heal_amount)
 
-# New method for handling weapon loaded event
 func on_weapon_loaded(_data: Variant = null) -> void:
 	print("[HealthPackageCore] weapon.loaded event received")
-	# Get weapon adapter through PackageManager
 	_weapon_adapter = _package.get_package_adapter("weapon_package")
 	if _weapon_adapter:
-		print("[HealthPackageCore] Weapon adapter obtained")
+		print("[HealthPackageCore] Weapon adapter received")
 	else:
 		print("[HealthPackageCore] Failed to get weapon adapter")
 
@@ -85,7 +77,6 @@ func get_max_hp() -> int:
 	return MAX_HP
 
 func _on_health_take_damage(data: Variant) -> void:
-	## Handling damage from status effects (e.g., poison)
 	var amount = 1
 	var source = "unknown"
 	
@@ -94,7 +85,6 @@ func _on_health_take_damage(data: Variant) -> void:
 		source = data.get("source", "unknown")
 		print("[HealthPackageCore] Received damage from %s: %d" % [source, amount])
 		
-		# Poison cannot kill, leaves minimum 1 HP
 		if source == "poison":
 			if _current_hp - amount < MIN_HP:
 				amount = max(0, _current_hp - MIN_HP)

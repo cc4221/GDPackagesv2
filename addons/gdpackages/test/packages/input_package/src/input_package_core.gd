@@ -1,7 +1,4 @@
 extends Node
-## InputPackageCore - Input package core
-## Handles physical key presses 1,2,3,4
-## Emits events through the main package
 
 class_name InputPackageCore
 
@@ -16,7 +13,6 @@ func _input(event: InputEvent) -> void:
 		print("[InputPackageCore] ERROR: _package = null")
 		return
 	
-	# Processing numeric key presses
 	if event is InputEventKey and event.pressed:
 		print("[InputPackageCore] Key pressed: ", event.keycode)
 		match event.keycode:

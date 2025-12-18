@@ -1,7 +1,4 @@
 extends Node
-## WeaponPackageCore - Core weapon system
-## Asynchronously loads .tres resource
-## Provides damage and healing multipliers
 
 class_name WeaponPackageCore
 
@@ -16,15 +13,13 @@ func set_package_reference(package: Package) -> void:
 	print("[WeaponPackageCore] set_package_reference() called")
 
 func load_weapon_async(resource_path: String) -> void:
-	## Loading weapon asynchronously through ResourceLoader
-	print("[WeaponPackageCore] load_weapon_async() starting load: ", resource_path)
+	print("[WeaponPackageCore] load_weapon_async() loading started: ", resource_path)
 	_resource_loader = ResourceLoader.load_threaded_request(resource_path)
 	if _resource_loader == OK:
-		print("[WeaponPackageCore] Async resource load request sent")
-		# Connecting to the update process to check readiness
+		print("[WeaponPackageCore] Asynchronous load request sent")
 		set_process(true)
 	else:
-		print("[WeaponPackageCore] ERROR during async load request: ", _resource_loader)
+		print("[WeaponPackageCore] ERROR during asynchronous load request: ", _resource_loader)
 
 func _process(_delta: float) -> void:
 	if _resource_loader and not _is_ready:
@@ -37,7 +32,7 @@ func _process(_delta: float) -> void:
 			_resource_loader = null
 			set_process(false)
 		elif status == ResourceLoader.THREAD_LOAD_FAILED:
-			print("[WeaponPackageCore] ERROR loading resource")
+			print("[WeaponPackageCore] ERROR during resource loading")
 			_package.emit_event("weapon.load_failed", {"path": _resource_loader})
 			_resource_loader = null
 			set_process(false)
@@ -52,7 +47,7 @@ func _apply_weapon_data(weapon: Resource) -> void:
 		print("[WeaponPackageCore] heal_multiplier = ", _heal_multiplier)
 	
 	_is_ready = true
-	print("[WeaponPackageCore] Weapon ready for use")
+	print("[WeaponPackageCore] Weapon is ready for use")
 	_package.emit_event("weapon.loaded", {
 		"damage_multiplier": _damage_multiplier,
 		"heal_multiplier": _heal_multiplier
