@@ -1,18 +1,18 @@
 extends Node
-## StatusEffectPackageCore - Ядро системы статус-эффектов
-## Управляет Freeze и Poison эффектами независимо от FSM
+## StatusEffectPackageCore - Core system for status effects
+## Manages Freeze and Poison effects independently of FSM
 
 class_name StatusEffectPackageCore
 
 var _package: Package = null
 var _health_adapter = null
 
-# Freeze параметры
+# Freeze parameters
 const FREEZE_DURATION = 4.0
 var _freeze_timer: Timer = null
 var _is_frozen: bool = false
 
-# Poison параметры
+# Poison parameters
 const POISON_DURATION = 5.0
 var _poison_timer: Timer = null
 var _poison_damage_timer: Timer = null
@@ -20,29 +20,29 @@ var _is_poisoned: bool = false
 
 func set_package_reference(package: Package) -> void:
 	_package = package
-	print("[StatusEffectPackageCore] set_package_reference() вызвана, пакет: ", package.config_get_name())
-	# Подписываемся на запросы эффектов
-	print("[StatusEffectPackageCore] Подписываемся на запросы статус-эффектов...")
+	print("[StatusEffectPackageCore] set_package_reference() called, package: ", package.config_get_name())
+	# Subscribe to effect requests
+	print("[StatusEffectPackageCore] Subscribing to status effect requests...")
 	_package.subscribe_to_event("status.request_freeze_self", Callable(self, "_on_request_freeze"))
 	_package.subscribe_to_event("status.request_poison_self", Callable(self, "_on_request_poison"))
-	print("[StatusEffectPackageCore] Подписки установлены")
+	print("[StatusEffectPackageCore] Subscriptions established")
 
 func _on_request_freeze(_data: Variant = null) -> void:
-	print("[StatusEffectPackageCore] Запрос на заморозку получен")
+	print("[StatusEffectPackageCore] Freeze request received")
 	if not _is_frozen:
 		apply_freeze()
 	else:
-		print("[StatusEffectPackageCore] Уже заморожено, игнорируем")
+		print("[StatusEffectPackageCore] Already frozen, ignoring")
 
 func _on_request_poison(_data: Variant = null) -> void:
-	print("[StatusEffectPackageCore] Запрос на яд получен")
+	print("[StatusEffectPackageCore] Poison request received")
 	if not _is_poisoned:
 		apply_poison()
 	else:
-		print("[StatusEffectPackageCore] Уже отравлено, игнорируем")
+		print("[StatusEffectPackageCore] Already poisoned, ignoring")
 
 func apply_freeze() -> void:
-	print("[StatusEffectPackageCore] apply_freeze() выполняется")
+	print("[StatusEffectPackageCore] apply_freeze() executing")
 	_is_frozen = true
 	_package.emit_event("status.freeze_applied", {"duration": FREEZE_DURATION})
 	
@@ -55,56 +55,56 @@ func apply_freeze() -> void:
 	if not _freeze_timer.timeout.is_connected(_on_freeze_ended):
 		_freeze_timer.timeout.connect(_on_freeze_ended)
 	_freeze_timer.start()
-	print("[StatusEffectPackageCore] Заморозка применена на %.1f сек" % FREEZE_DURATION)
+	print("[StatusEffectPackageCore] Freeze applied for %.1f sec" % FREEZE_DURATION)
 
 func _on_freeze_ended() -> void:
-	print("[StatusEffectPackageCore] Заморозка окончена")
+	print("[StatusEffectPackageCore] Freeze ended")
 	_is_frozen = false
 	if _freeze_timer and _freeze_timer.timeout.is_connected(_on_freeze_ended):
 		_freeze_timer.timeout.disconnect(_on_freeze_ended)
 	_package.emit_event("status.freeze_removed", {})
 
 func apply_poison() -> void:
-	print("[StatusEffectPackageCore] apply_poison() выполняется")
+	print("[StatusEffectPackageCore] apply_poison() executing")
 	_is_poisoned = true
 	_package.emit_event("status.poison_applied", {"duration": POISON_DURATION})
 	
-	# Таймер для отслеживания окончания яда
+	# Timer to track poison expiration
 	if not _poison_timer:
 		_poison_timer = Timer.new()
 		add_child(_poison_timer)
 	else:
-		# Если таймер уже существует, отключаем старые подключения
+		# If timer already exists, disconnect old connections
 		if _poison_timer.timeout.is_connected(Callable(self, "_on_poison_ended")):
 			_poison_timer.timeout.disconnect(Callable(self, "_on_poison_ended"))
 		_poison_timer.stop()
 	
 	_poison_timer.wait_time = POISON_DURATION
 	_poison_timer.one_shot = true
-	# Проверяем, не подключен ли уже сигнал
+	# Check if signal is already connected
 	if not _poison_timer.timeout.is_connected(Callable(self, "_on_poison_ended")):
 		_poison_timer.timeout.connect(Callable(self, "_on_poison_ended"))
 	_poison_timer.start()
 	
-	# Таймер для ежесекундного урона
+	# Timer for periodic damage
 	if not _poison_damage_timer:
 		_poison_damage_timer = Timer.new()
 		add_child(_poison_damage_timer)
 	
 	_poison_damage_timer.wait_time = 1.0
-	# Проверяем, не подключен ли уже сигнал
+	# Check if signal is already connected
 	if not _poison_damage_timer.timeout.is_connected(Callable(self, "_on_poison_tick")):
 		_poison_damage_timer.timeout.connect(Callable(self, "_on_poison_tick"))
 	_poison_damage_timer.start()
-	print("[StatusEffectPackageCore] Яд применен на %.1f сек" % POISON_DURATION)
+	print("[StatusEffectPackageCore] Poison applied for %.1f sec" % POISON_DURATION)
 
 func _on_poison_tick() -> void:
-	# Наносим 1 HP урона в секунду через событие
-	print("[StatusEffectPackageCore] Ежесекундный урон от яда")
+	# Deal 1 HP damage per second through event
+	print("[StatusEffectPackageCore] Tick damage from poison")
 	_package.emit_event("health.take_damage", {"amount": 1, "source": "poison"})
 
 func _on_poison_ended() -> void:
-	print("[StatusEffectPackageCore] Яд окончен")
+	print("[StatusEffectPackageCore] Poison ended")
 	_is_poisoned = false
 	if _poison_damage_timer:
 		if _poison_damage_timer.timeout.is_connected(Callable(self, "_on_poison_tick")):

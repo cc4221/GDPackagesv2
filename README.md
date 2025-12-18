@@ -3,74 +3,74 @@
 A lightweight, opinionated framework for creating modular, isolated packages in Godot. This system encourages decoupled development, safe experimentation, and maintainable feature layers.
 
 ---
-# GDPackages - Система управления пакетами для Godot 4.6
+# GDPackages - Package Management System for Godot 4.6
 
-## Содержание
+## Table of Contents
 
-1. [Введение](#введение)
-2. [Быстрый старт](#быстрый-старт)
-3. [Архитектура](#архитектура)
-4. [Справочник API](#справочник-api)
-5. [Рекомендации по использованию](#рекомендации-по-использованию)
-6. [Когда использовать X, а когда Y](#когда-использовать-x-а-когда-y)
-7. [Примеры хорошего и плохого кода](#примеры-хорошего-и-плохого-кода)
-8. [Устранение неполадок](#устранение-неполадок)
-9. [Примеры использования](#примеры-использования)
+1. [Introduction](#introduction)
+2. [Quick Start](#quick-start)
+3. [Architecture](#architecture)
+4. [API Reference](#api-reference)
+5. [Usage Guidelines](#usage-guidelines)
+6. [When to Use X vs Y](#when-to-use-x-vs-y)
+7. [Good and Bad Code Examples](#good-and-bad-code-examples)
+8. [Troubleshooting](#troubleshooting)
+9. [Usage Examples](#usage-examples)
 
-## Введение
+## Introduction
 
-GDPackages - это система управления пакетами для движка Godot 4.6, предназначенная для создания, загрузки и управления пакетами с поддержкой асинхронной загрузки ресурсов, событийной шины и логирования. Пакеты представляют собой модульные компоненты, которые могут содержать скрипты, ресурсы и другую логику, организованную в структурированную систему.
+GDPackages is a package management system for the Godot 4.6 engine designed for creating, loading, and managing packages with support for asynchronous resource loading, event bus, and logging. Packages are modular components that can contain scripts, resources, and other logic organized in a structured system.
 
-### Основные возможности
+### Key Features
 
-- Создание и управление пакетами
-- Асинхронная загрузка и сохранение ресурсов
-- Событийная шина для коммуникации между пакетами
-- Группировка пакетов и управление зависимостями
-- Логирование событий и ошибок
-- _lazy_ и асинхронная загрузка пакетов
-- Валидация пакетов
-- Поддержка адаптеров для пакетов
+- Creating and managing packages
+- Asynchronous loading and saving of resources
+- Event bus for communication between packages
+- Grouping packages and managing dependencies
+- Logging events and errors
+- Lazy and asynchronous loading of packages
+- Package validation
+- Support for package adapters
 
-## Быстрый старт
+## Quick Start
 
-### Установка
+### Installation
 
-1. Скопируйте папку `gdpackages` в директорию `addons` вашего проекта Godot.
-2. Включите плагин в настройках проекта (Project -> Project Settings -> Plugins).
+1. Copy the `gdpackages` folder to your Godot project's `addons` directory.
+2. Enable the plugin in project settings (Project -> Project Settings -> Plugins).
 
-### Создание первого пакета
+### Creating Your First Package
 
-Самый быстрый способ начать использовать GDPackages - создать новый пакет через контекстное меню редактора:
+The fastest way to start using GDPackages is to create a new package via the editor's context menu:
 
 ```gdscript
-# 1. Щелкните правой кнопкой мыши в проводнике файлов
-# 2. Выберите "Package" из контекстного меню
-# 3. Заполните информацию о пакете в диалоговом окне
+# 1. Right-click in the file explorer
+# 2. Select "Package" from the context menu
+# 3. Fill in package information in the dialog
 ```
 
-### Базовое использование
+### Basic Usage
 
 ```gdscript
-# Загрузка пакета
+# Loading a package
 var package_path = "res://addons/my_package"
 PackageManager.register_package(package_path)
 PackageManager.load_lazy_package("my_package")
 
-# Получение пакета
+# Getting a package
 var my_package = PackageManager.get_package("my_package")
 
-# Использование событийной шины
+# Using the event bus
 my_package.emit_event("my_event", {"data": "some_value"})
 my_package.subscribe_to_event("my_event", self._on_my_event)
 
 func _on_my_event(data):
-    print("Получено событие: ", data)
+    print("Received event: ", data)
 ```
 
-## Архитектура
+## Architecture
 
-### Диаграмма компонентов
+### Component Diagram
 
 ```mermaid
 graph TD
@@ -89,241 +89,241 @@ graph TD
     M --> N[Other Packages]
 ```
 
-### Жизненный цикл пакета
+### Package Lifecycle
 
-1. **Создание**: Пакет создается с определенной структурой файлов и конфигурацией
-2. **Регистрация**: Пакет регистрируется в `PackageManager` для lazy-загрузки
-3. **Загрузка**: Пакет загружается в память и инициализируется
-4. **Использование**: Пакет взаимодействует с другими пакетами через событийную шину
-5. **Выгрузка**: Пакет выгружается из памяти при завершении работы
+1. **Creation**: A package is created with a specific file structure and configuration
+2. **Registration**: The package is registered in `PackageManager` for lazy loading
+3. **Loading**: The package is loaded into memory and initialized
+4. **Usage**: The package interacts with other packages through the event bus
+5. **Unloading**: The package is unloaded from memory when shutting down
 
-### Структура пакета
+### Package Structure
 
 ```
 my_package/
-├── package_config.tres     # Конфигурация пакета
-├── my_package.gd          # Основной скрипт пакета
-├── my_package_adapter.gd # Адаптер пакета (опционально)
-├── src/                   # Исходный код пакета
+├── package_config.tres     # Package configuration
+├── my_package.gd          # Main package script
+├── my_package_adapter.gd # Package adapter (optional)
+├── src/                   # Package source code
 │   └── my_package_core.gd
-└── ...                    # Другие ресурсы
+└── ...                    # Other resources
 ```
 
-## Справочник API
+## API Reference
 
 ### Package
 
-Базовый класс для всех пакетов в системе GDPackages.
+Base class for all packages in the GDPackages system.
 
-#### Методы
+#### Methods
 
 **`_loaded() -> void`**
-- **Описание**: Абстрактный метод, вызываемый при загрузке пакета
-- **Пример**:
+- **Description**: Abstract method called when the package is loaded
+- **Example**:
 ```gdscript
 func _loaded() -> void:
-    emit_message("Пакет загружен успешно")
+    emit_message("Package loaded successfully")
 ```
 
 **`_unloaded() -> void`**
-- **Описание**: Абстрактный метод, вызываемый при выгрузке пакета
-- **Пример**:
+- **Description**: Abstract method called when the package is unloaded
+- **Example**:
 ```gdscript
 func _unloaded() -> void:
-    emit_message("Пакет выгружен успешно")
+    emit_message("Package unloaded successfully")
 ```
 
 **`_message(identity: String, message: String) -> void`**
-- **Описание**: Абстрактный метод для обработки сообщений
-- **Пример**:
+- **Description**: Abstract method for handling messages
+- **Example**:
 ```gdscript
 func _message(identity: String, message: String) -> void:
-    print("Сообщение от ", identity, ": ", message)
+    print("Message from ", identity, ": ", message)
 ```
 
 **`config_get_name() -> String`**
-- **Описание**: Возвращает имя пакета из конфигурации
-- **Пример**:
+- **Description**: Returns the package name from the configuration
+- **Example**:
 ```gdscript
 var package_name = my_package.config_get_name()
-print("Имя пакета: ", package_name)
+print("Package name: ", package_name)
 ```
 
 **`emit_message(message: String, identity: String = config_get_name()) -> void`**
-- **Описание**: Отправляет сообщение через PackageManager
-- **Пример**:
+- **Description**: Sends a message through PackageManager
+- **Example**:
 ```gdscript
-emit_message("Привет из пакета!")
+emit_message("Hello from package!")
 ```
 
 **`emit_event(event_name: String, data: Variant = null) -> void`**
-- **Описание**: Отправляет событие через PackageEventBus
-- **Пример**:
+- **Description**: Sends an event through PackageEventBus
+- **Example**:
 ```gdscript
 emit_event("game_started", {"level": 1})
 ```
 
 **`subscribe_to_event(event_name: String, callback: Callable, filter: Callable = Callable()) -> void`**
-- **Описание**: Подписывается на событие через PackageEventBus
-- **Пример**:
+- **Description**: Subscribes to an event through PackageEventBus
+- **Example**:
 ```gdscript
 subscribe_to_event("player_moved", self._on_player_moved)
 ```
 
 ### PackageManager
 
-Центральный класс для управления всеми пакетами в системе.
+Central class for managing all packages in the system.
 
-#### Статические методы
+#### Static Methods
 
 **`register_package(directory: String, group: String = "") -> bool`**
-- **Описание**: Регистрирует пакет для lazy-загрузки
-- **Типы аргументов**: `directory: String`, `group: String`
-- **Возвращаемый тип**: `bool`
-- **Пример**:
+- **Description**: Registers a package for lazy loading
+- **Argument Types**: `directory: String`, `group: String`
+- **Return Type**: `bool`
+- **Example**:
 ```gdscript
 var success = PackageManager.register_package("res://addons/my_package", "game_packages")
 if success:
-    print("Пакет зарегистрирован успешно")
+    print("Package registered successfully")
 ```
 
 **`load_lazy_package(package_name: String, dependency_chain: Array[String] = []) -> bool`**
-- **Описание**: Загружает пакет, зарегистрированный для lazy-загрузки
-- **Типы аргументов**: `package_name: String`, `dependency_chain: Array[String]`
-- **Возвращаемый тип**: `bool`
-- **Пример**:
+- **Description**: Loads a package registered for lazy loading
+- **Argument Types**: `package_name: String`, `dependency_chain: Array[String]`
+- **Return Type**: `bool`
+- **Example**:
 ```gdscript
 var success = PackageManager.load_lazy_package("my_package")
 if success:
-    print("Пакет загружен успешно")
+    print("Package loaded successfully")
 ```
 
 **`get_package(package_name: String) -> Package`**
-- **Описание**: Возвращает экземпляр пакета по имени
-- **Типы аргументов**: `package_name: String`
-- **Возвращаемый тип**: `Package`
-- **Пример**:
+- **Description**: Returns a package instance by name
+- **Argument Types**: `package_name: String`
+- **Return Type**: `Package`
+- **Example**:
 ```gdscript
 var my_package = PackageManager.get_package("my_package")
 if my_package:
-    print("Пакет найден: ", my_package.config_get_name())
+    print("Package found: ", my_package.config_get_name())
 ```
 
 **`emit_message(identity: StringName, message: String) -> void`**
-- **Описание**: Отправляет сообщение всем пакетам
-- **Типы аргументов**: `identity: StringName`, `message: String`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Sends a message to all packages
+- **Argument Types**: `identity: StringName`, `message: String`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
-PackageManager.emit_message("GameSystem", "Игра началась")
+PackageManager.emit_message("GameSystem", "Game started")
 ```
 
 **`get_packages_dependent_on(package_name: String) -> PackedStringArray`**
-- **Описание**: Возвращает список пакетов, зависящих от указанного
-- **Типы аргументов**: `package_name: String`
-- **Возвращаемый тип**: `PackedStringArray`
-- **Пример**:
+- **Description**: Returns a list of packages that depend on the specified one
+- **Argument Types**: `package_name: String`
+- **Return Type**: `PackedStringArray`
+- **Example**:
 ```gdscript
 var dependents = PackageManager.get_packages_dependent_on("core_package")
-print("Зависимые пакеты: ", dependents)
+print("Dependent packages: ", dependents)
 ```
 
 ### PackageEventBus
 
-Глобальная система событий для коммуникации между пакетами.
+Global event system for communication between packages.
 
-#### Статические методы
+#### Static Methods
 
 **`emit(event_name: StringName, data: Variant = null, source: String = "") -> void`**
-- **Описание**: Отправляет событие всем подписчикам
-- **Типы аргументов**: `event_name: StringName`, `data: Variant`, `source: String`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Sends an event to all subscribers
+- **Argument Types**: `event_name: StringName`, `data: Variant`, `source: String`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
 PackageEventBus.emit("player_health_changed", {"value": 50, "max": 100}, "PlayerPackage")
 ```
 
 **`subscribe(event_name: StringName, callback: Callable, package_name: String = "", filter: Callable = Callable()) -> String`**
-- **Описание**: Подписывается на событие
-- **Типы аргументов**: `event_name: StringName`, `callback: Callable`, `package_name: String`, `filter: Callable`
-- **Возвращаемый тип**: `String`
-- **Пример**:
+- **Description**: Subscribes to an event
+- **Argument Types**: `event_name: StringName`, `callback: Callable`, `package_name: String`, `filter: Callable`
+- **Return Type**: `String`
+- **Example**:
 ```gdscript
 var sub_id = PackageEventBus.subscribe("player_health_changed", self._on_health_changed)
 ```
 
 **`get_cached_events(event_name: StringName, count: int = 10) -> Array`**
-- **Описание**: Возвращает кэшированные события
-- **Типы аргументов**: `event_name: StringName`, `count: int`
-- **Возвращаемый тип**: `Array`
-- **Пример**:
+- **Description**: Returns cached events
+- **Argument Types**: `event_name: StringName`, `count: int`
+- **Return Type**: `Array`
+- **Example**:
 ```gdscript
 var events = PackageEventBus.get_cached_events("player_health_changed", 5)
-print("Последние события: ", events)
+print("Recent events: ", events)
 ```
 
 ### PackageLogger
 
-Централизованная система логирования для пакетов.
+Centralized logging system for packages.
 
-#### Статические методы
+#### Static Methods
 
 **`log_info(identity: String, message: String) -> void`**
-- **Описание**: Логирует информационное сообщение
-- **Типы аргументов**: `identity: String`, `message: String`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Logs an informational message
+- **Argument Types**: `identity: String`, `message: String`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
-PackageLogger.log_info("MyPackage", "Информация о процессе")
+PackageLogger.log_info("MyPackage", "Process information")
 ```
 
 **`log_error(identity: String, message: String) -> void`**
-- **Описание**: Логирует ошибку
-- **Типы аргументов**: `identity: String`, `message: String`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Logs an error
+- **Argument Types**: `identity: String`, `message: String`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
-PackageLogger.log_error("MyPackage", "Произошла ошибка")
+PackageLogger.log_error("MyPackage", "An error occurred")
 ```
 
 **`set_log_level(level: LogLevel) -> void`**
-- **Описание**: Устанавливает уровень логирования
-- **Типы аргументов**: `level: LogLevel`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Sets the logging level
+- **Argument Types**: `level: LogLevel`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
 PackageLogger.set_log_level(PackageLogger.LogLevel.DEBUG)
 ```
 
 ### PackageConfig
 
-Ресурс для хранения конфигурации пакета.
+Resource for storing package configuration.
 
-#### Свойства
+#### Properties
 
-- `name: String` - Имя пакета
-- `version: String` - Версия пакета
-- `description: String` - Описание пакета
-- `script_path: String` - Путь к скрипту пакета
-- `adapter_path: String` - Путь к адаптеру пакета
-- `dependencies: PackedStringArray` - Зависимости пакета
+- `name: String` - Package name
+- `version: String` - Package version
+- `description: String` - Package description
+- `script_path: String` - Path to the package script
+- `adapter_path: String` - Path to the package adapter
+- `dependencies: PackedStringArray` - Package dependencies
 
-#### Методы
+#### Methods
 
 **`to_dict() -> Dictionary`**
-- **Описание**: Преобразует конфигурацию в словарь
-- **Возвращаемый тип**: `Dictionary`
-- **Пример**:
+- **Description**: Converts the configuration to a dictionary
+- **Return Type**: `Dictionary`
+- **Example**:
 ```gdscript
 var config_dict = package_config.to_dict()
-print("Конфигурация: ", config_dict)
+print("Configuration: ", config_dict)
 ```
 
 **`from_dict(dict: Dictionary) -> void`**
-- **Описание**: Инициализирует конфигурацию из словаря
-- **Типы аргументов**: `dict: Dictionary`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Initializes the configuration from a dictionary
+- **Argument Types**: `dict: Dictionary`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
 var new_config = PackageConfig.new()
 new_config.from_dict({"name": "test_package", "version": "1.0"})
@@ -331,127 +331,127 @@ new_config.from_dict({"name": "test_package", "version": "1.0"})
 
 ### PackageThreadedResourceManager
 
-Singleton для многопоточной загрузки/сохранения ресурсов.
+Singleton for multithreaded loading/saving of resources.
 
-#### Статические методы
+#### Static Methods
 
 **`load_resource(key: String, path: String, type_hint: String = "", cache_mode: int = 1) -> void`**
-- **Описание**: Асинхронно загружает ресурс
-- **Типы аргументов**: `key: String`, `path: String`, `type_hint: String`, `cache_mode: int`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Asynchronously loads a resource
+- **Argument Types**: `key: String`, `path: String`, `type_hint: String`, `cache_mode: int`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
 PackageThreadedResourceManager.load_resource("texture1", "res://assets/texture.png")
 ```
 
 **`save_resource(resource: Resource, path: String = "", flags: int = 0) -> void`**
-- **Описание**: Асинхронно сохраняет ресурс
-- **Типы аргументов**: `resource: Resource`, `path: String`, `flags: int`
-- **Возвращаемый тип**: `void`
-- **Пример**:
+- **Description**: Asynchronously saves a resource
+- **Argument Types**: `resource: Resource`, `path: String`, `flags: int`
+- **Return Type**: `void`
+- **Example**:
 ```gdscript
 PackageThreadedResourceManager.save_resource(my_texture, "res://saved/texture.tres")
 ```
 
 **`connect_load_finished(callable: Callable, flags: int = 0) -> int`**
-- **Описание**: Подключается к сигналу завершения загрузки
-- **Типы аргументов**: `callable: Callable`, `flags: int`
-- **Возвращаемый тип**: `int`
-- **Пример**:
+- **Description**: Connects to the load completion signal
+- **Argument Types**: `callable: Callable`, `flags: int`
+- **Return Type**: `int`
+- **Example**:
 ```gdscript
 PackageThreadedResourceManager.connect_load_finished(self._on_load_finished)
 ```
 
-## Рекомендации по использованию
+## Usage Guidelines
 
-### Гранулярность пакетов
+### Package Granularity
 
-При создании пакетов следуйте принципам модульности:
+When creating packages, follow modularity principles:
 
-1. **Одна основная функция на пакет**: Каждый пакет должен отвечать за одну конкретную функциональность
-2. **Минимальные зависимости**: Сведите зависимости к минимуму для лучшей переносимости
-3. **Четкие интерфейсы**: Определите четкие API для взаимодействия с другими пакетами
+1. **One main function per package**: Each package should be responsible for one specific functionality
+2. **Minimal dependencies**: Minimize dependencies for better portability
+3. **Clear interfaces**: Define clear APIs for interaction with other packages
 
 ```gdscript
-# Пример: Пакет для управления аудио
+# Example: Package for audio management
 # audio_package.gd
 extends Package
 
 func _loaded() -> void:
-    emit_message("Аудио-пакет загружен")
+    emit_message("Audio package loaded")
 
 func play_sound(sound_name: String) -> void:
-    # Логика воспроизведения звука
+    # Sound playback logic
     emit_event("sound_played", {"name": sound_name})
 
 func set_volume(volume: float) -> void:
-    # Логика изменения громкости
+    # Volume adjustment logic
     emit_event("volume_changed", {"value": volume})
 ```
 
-### Управление зависимостями
+### Dependency Management
 
-1. **Явное указание зависимостей**: Указывайте все зависимости в конфигурации пакета
-2. **Проверка наличия зависимостей**: Используйте методы PackageManager для проверки зависимостей
-3. **Обработка отсутствующих зависимостей**: Обрабатывайте случаи, когда зависимости недоступны
+1. **Explicit dependency specification**: Specify all dependencies in the package configuration
+2. **Dependency availability checking**: Use PackageManager methods to check dependencies
+3. **Handling missing dependencies**: Handle cases where dependencies are unavailable
 
 ```gdscript
-# Проверка зависимостей
+# Dependency checking
 func check_dependencies() -> bool:
     var missing_deps = PackageManager.get_missing_dependencies(config_get_name())
     if missing_deps.size() > 0:
-        emit_error("Отсутствуют зависимости: " + str(missing_deps))
+        emit_error("Missing dependencies: " + str(missing_deps))
         return false
     return true
 ```
 
-### Кэширование ресурсов
+### Resource Caching
 
-Используйте встроенную систему кэширования для эффективной работы с ресурсами:
+Use the built-in caching system for efficient resource management:
 
 ```gdscript
-# Асинхронная загрузка с кэшированием
+# Asynchronous loading with caching
 func load_assets() -> void:
     PackageThreadedResourceManager.load_resource("player_sprite", "res://player.png")
     PackageThreadedResourceManager.load_resource("enemy_sprite", "res://enemy.png")
     
-    # Подключение к сигналу завершения загрузки
+    # Connecting to the load completion signal
     PackageThreadedResourceManager.connect_load_finished(self._on_assets_loaded)
 
 func _on_assets_loaded(loaded_files: Dictionary) -> void:
     var player_sprite = loaded_files.get("player_sprite")
     var enemy_sprite = loaded_files.get("enemy_sprite")
-    # Использование загруженных ресурсов
+    # Using loaded resources
 ```
 
-### Тестирование пакетов
+### Package Testing
 
-1. **Модульное тестирование**: Тестируйте отдельные компоненты пакета
-2. **Интеграционное тестирование**: Тестируйте взаимодействие с другими пакетами
-3. **Тестирование зависимостей**: Проверяйте работу при отсутствии зависимостей
+1. **Unit testing**: Test individual package components
+2. **Integration testing**: Test interaction with other packages
+3. **Dependency testing**: Verify functionality when dependencies are missing
 
 ```gdscript
-# Пример тестирования
+# Testing example
 func test_package_functionality() -> void:
-    # Подготовка
+    # Setup
     var test_package = TestPackage.new()
     
-    # Выполнение
+    # Execution
     test_package._loaded()
     
-    # Проверка
-    assert(test_package.config_get_name() == "test_package", "Неправильное имя пакета")
+    # Verification
+    assert(test_package.config_get_name() == "test_package", "Incorrect package name")
 ```
 
-### Рекомендации по производительности
+### Performance Guidelines
 
-1. **Асинхронная загрузка**: Используйте асинхронные методы для загрузки ресурсов
-2. **Группировка операций**: Группируйте похожие операции для оптимизации
-3. **Использование пулов потоков**: Используйте встроенные пулы потоков для многопоточных операций
-4. **Контроль памяти**: Мониторьте использование памяти и очищайте ресурсы при выгрузке
+1. **Asynchronous loading**: Use asynchronous methods for resource loading
+2. **Operation grouping**: Group similar operations for optimization
+3. **Thread pool usage**: Use built-in thread pools for multithreaded operations
+4. **Memory control**: Monitor memory usage and clean up resources on unload
 
 ```gdscript
-# Оптимизация загрузки ресурсов
+# Resource loading optimization
 func optimized_load_resources() -> void:
     var resources_to_load = [
         ["texture1", "res://texture1.png"],
@@ -459,64 +459,64 @@ func optimized_load_resources() -> void:
         ["texture3", "res://texture3.png"]
     ]
     
-    # Загрузка группы ресурсов
+    # Loading a group of resources
     PackageThreadedResourceManager.load_resources_group("ui_textures", resources_to_load)
     
-    # Подключение к сигналу завершения группы
+    # Connecting to the group completion signal
     PackageThreadedResourceManager.connect_load_group(self._on_group_loaded)
 ```
 
-## Когда использовать X, а когда Y
+## When to Use X vs Y
 
 ### emit_message vs emit_event
 
-**Когда использовать `emit_message`:**
-- Для отправки простых информационных сообщений
-- Для логирования действий в системе
-- Когда не требуется реакция от других пакетов
-- Для отладки и мониторинга состояния
+**When to use `emit_message`:**
+- For sending simple informational messages
+- For logging actions in the system
+- When no reaction from other packages is required
+- For debugging and state monitoring
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: информирование о процессе загрузки
+# Good: informing about loading progress
 func _loaded() -> void:
-    emit_message("Пакет успешно загружен")
+    emit_message("Package loaded successfully")
 ```
 
-**Когда использовать `emit_event`:**
-- Для коммуникации между пакетами
-- Когда требуется реакция от других пакетов
-- Для передачи данных между модулями
-- Для реализации событийной архитектуры
+**When to use `emit_event`:**
+- For communication between packages
+- When a reaction from other packages is required
+- For passing data between modules
+- For implementing event-driven architecture
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: уведомление о смене состояния игры
+# Good: notifying about game state change
 func change_game_state(new_state: String) -> void:
     current_state = new_state
     emit_event("game_state_changed", {"state": new_state})
 ```
 
-**Анти-паттерн:**
+**Anti-pattern:**
 ```gdscript
-# Плохо: использование emit_message для передачи данных
+# Bad: using emit_message for data transfer
 func player_died() -> void:
-    emit_message("player_died")  # Другие пакеты не могут подписаться на это сообщение
-    # Лучше использовать emit_event("player_died", {"player_id": id})
+    emit_message("player_died")  # Other packages cannot subscribe to this message
+    # Better to use emit_event("player_died", {"player_id": id})
 ```
 
-### EventBus vs прямой вызов API пакета
+### EventBus vs Direct Package API Call
 
-**Когда использовать EventBus (события):**
-- Для слабосвязанной архитектуры
-- Когда неизвестно, какие пакеты будут реагировать
-- Для уведомлений о событиях (пользовательский ввод, изменения состояния)
-- Для уведомлений о системных событиях
+**When to use EventBus (events):**
+- For loosely-coupled architecture
+- When it's unknown which packages will react
+- For notifications about events (user input, state changes)
+- For notifications about system events
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: слабосвязанная архитектура
-# UI пакет подписывается на события игрока
+# Good: loosely-coupled architecture
+# UI package subscribes to player events
 func _ready() -> void:
     subscribe_to_event("player_health_changed", self._on_health_changed)
 
@@ -524,15 +524,15 @@ func _on_health_changed(data: Dictionary) -> void:
     update_health_bar(data.health)
 ```
 
-**Когда использовать прямой вызов API:**
-- Для синхронных операций
-- Когда нужен результат выполнения
-- Для специфичных операций, которые не должны быть общими событиями
-- Для вызова функций, которые не являются событиями
+**When to use direct API calls:**
+- For synchronous operations
+- When execution results are needed
+- For specific operations that shouldn't be common events
+- For calling functions that aren't events
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: синхронный вызов для получения данных
+# Good: synchronous call to get data
 func get_player_position() -> Vector2:
     var game_package = PackageManager.get_package("game_logic")
     if game_package:
@@ -540,26 +540,26 @@ func get_player_position() -> Vector2:
     return Vector2.ZERO
 ```
 
-**Анти-паттерн:**
+**Anti-pattern:**
 ```gdscript
-# Плохо: прямой вызов другого пакета для уведомления о событии
+# Bad: direct call to another package for event notification
 func player_health_changed(new_health: int) -> void:
     var ui_package = PackageManager.get_package("ui_package")
     if ui_package and ui_package.has_method("_update_health_display"):
-        ui_package._update_health_display(new_health)  # Создает жесткую зависимость
+        ui_package._update_health_display(new_health)  # Creates tight coupling
 ```
 
-### Adapter vs публичные методы Package
+### Adapter vs Public Package Methods
 
-**Когда использовать Adapter:**
-- Для предоставления интерфейса между пакетами
-- Для инкапсуляции взаимодействия с UI
-- Для упрощения взаимодействия между модулями
-- Когда нужно предоставить упрощенный интерфейс внешнему коду
+**When to use Adapter:**
+- To provide an interface between packages
+- To encapsulate UI interaction
+- To simplify interaction between modules
+- When providing a simplified interface to external code
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: адаптер как интерфейс между игровой логикой и UI
+# Good: adapter as interface between game logic and UI
 # health_adapter.gd
 extends PackageAdapter
 
@@ -581,40 +581,40 @@ func heal(amount: int) -> void:
         _health_package._heal(amount)
 ```
 
-**Когда использовать публичные методы Package:**
-- Для внутреннего взаимодействия пакетов
-- Когда не нужна дополнительная абстракция
-- Для синхронных операций внутри пакетной системы
+**When to use public Package methods:**
+- For internal package interaction
+- When no additional abstraction is needed
+- For synchronous operations within the package system
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: прямой вызов методов пакета для внутренней логики
+# Good: direct package method calls for internal logic
 func _ready() -> void:
     var health_package = PackageManager.get_package("health")
     if health_package:
         health_package.set_max_health(100)
 ```
 
-**Анти-паттерн:**
+**Anti-pattern:**
 ```gdscript
-# Плохо: использование адаптера для внутренней логики пакета
+# Bad: using adapter for internal package logic
 func internal_calculation() -> void:
-    # Не нужно использовать адаптер для внутреннего взаимодействия
+    # No need to use adapter for internal interaction
     var adapter = get_package_adapter("other_package")
-    adapter.some_internal_method()  # Прямой вызов был бы проще
+    adapter.some_internal_method()  # Direct call would be simpler
 ```
 
-### ThreadedResourceManager vs обычный load()
+### ThreadedResourceManager vs regular load()
 
-**Когда использовать ThreadedResourceManager:**
-- Для асинхронной загрузки/сохранения ресурсов
-- Когда нужно избежать задержек в главном потоке
-- Для загрузки больших ресурсов (текстур, сцен, аудио)
-- Для групповой загрузки ресурсов
+**When to use ThreadedResourceManager:**
+- For asynchronous resource loading/saving
+- When avoiding delays in the main thread
+- For loading large resources (textures, scenes, audio)
+- For batch loading of resources
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: асинхронная загрузка ресурсов
+# Good: asynchronous resource loading
 func load_level_resources() -> void:
     var resources_to_load = [
         ["player_model", "res://models/player.glb"],
@@ -626,36 +626,36 @@ func load_level_resources() -> void:
     connect_load_group(self._on_level_resources_loaded)
 ```
 
-**Когда использовать обычный load():**
-- Для загрузки небольших ресурсов при инициализации
-- Когда ресурс нужен немедленно
-- Для загрузки ресурсов в конструкторах и _ready()
-- Для ресурсов, которые точно уже загружены
+**When to use regular load():**
+- For loading small resources during initialization
+- When the resource is needed immediately
+- For loading resources in constructors and _ready()
+- For resources that are definitely already loaded
 
-**Пример хорошего использования:**
+**Example of good usage:**
 ```gdscript
-# Хорошо: загрузка небольших ресурсов синхронно
+# Good: synchronous loading of small resources
 func _ready() -> void:
-    # Маленькие ресурсы, загружаются быстро
+    # Small resources that load quickly
     icon_texture = load("res://ui/icon.png")
     font_resource = load("res://fonts/default.tres")
 ```
 
-**Анти-паттерн:**
+**Anti-pattern:**
 ```gdscript
-# Плохо: синхронная загрузка больших ресурсов в главном потоке
+# Bad: synchronous loading of large resources in main thread
 func load_level() -> void:
-    # Это вызовет задержку в игре
+    # This will cause delays in the game
     var large_scene = load("res://levels/complex_level.tscn")
     var large_texture = load("res://textures/large_texture.png")
 ```
 
-## Примеры хорошего и плохого кода
+## Good and Bad Code Examples
 
-### Хороший код: Правильное использование адаптера
+### Good Code: Proper Adapter Usage
 
 ```gdscript
-# Хороший пример: адаптер как интерфейс между модулями и UI
+# Good example: adapter as interface between modules and UI
 # game_adapter.gd
 extends PackageAdapter
 
@@ -665,7 +665,7 @@ func _init(owner_name: String) -> void:
     .(owner_name)
     _game_package = PackageManager.get_package(owner_name)
 
-# Методы для взаимодействия с UI
+# Methods for UI interaction
 func start_game() -> void:
     if _game_package and _game_package.has_method("_start_game"):
         _game_package._start_game()
@@ -679,35 +679,35 @@ func pause_game() -> void:
     if _game_package and _game_package.has_method("_pause_game"):
         _game_package._pause_game()
 
-# UI вызывает этот адаптер для взаимодействия с игровой логикой
+# UI calls this adapter to interact with game logic
 func on_start_button_pressed() -> void:
     start_game()
 ```
 
-### Плохой код: Прямая зависимость между UI игровой логикой
+### Bad Code: Direct Dependency Between UI and Game Logic
 
 ```gdscript
-# Плохой пример: жесткая зависимость между UI игровой логикой
+# Bad example: tight coupling between UI and game logic
 # ui_package.gd
 extends Package
 
 func on_start_button_pressed() -> void:
-    # Прямой вызов метода другого пакета
+    # Direct call to another package's method
     var game_package = PackageManager.get_package("game_logic")
     if game_package and game_package.has_method("start_game"):
-        game_package.start_game()  # Создает жесткую зависимость
+        game_package.start_game()  # Creates tight coupling
 
 func update_score_display() -> void:
     var game_package = PackageManager.get_package("game_logic")
     if game_package:
         var score = game_package.get_current_score()
-        # Обновление UI
+        # Updating UI
 ```
 
-### Хороший код: Событийная архитектура
+### Good Code: Event-Driven Architecture
 
 ```gdscript
-# Хороший пример: слабосвязанная архитектура через события
+# Good example: loosely-coupled architecture through events
 # game_logic_package.gd
 extends Package
 
@@ -721,7 +721,7 @@ func player_died() -> void:
 ```
 
 ```gdscript
-# ui_package.gd - подписывается на события
+# ui_package.gd - subscribes to events
 extends Package
 
 func _loaded() -> void:
@@ -735,38 +735,38 @@ func _on_player_died(data: Dictionary) -> void:
     show_game_over_screen(data.final_score)
 ```
 
-### Плохой код: Событийная архитектура с проблемами
+### Bad Code: Event-Driven Architecture with Issues
 
 ```gdscript
-# Плохой пример: чрезмерное использование событий
+# Bad example: excessive use of events
 # game_logic_package.gd
 extends Package
 
 func update_player_position(pos: Vector2) -> void:
     player_position = pos
-    # Плохо: отправка события при каждом обновлении позиции
-    emit_event("player_moved", {"position": pos})  # Может вызвать перегрузку событий
+    # Bad: sending event on every position update
+    emit_event("player_moved", {"position": pos})  # May cause event overload
 
 func take_damage(damage: int) -> void:
     health -= damage
-    # Плохо: отправка события с пустыми данными
-    emit_event("health_updated", {})  # Недостаточно информации
+    # Bad: sending event with empty data
+    emit_event("health_updated", {})  # Insufficient information
 ```
 
-### Хороший код: Обработка ошибок
+### Good Code: Error Handling
 
 ```gdscript
-# Хороший пример: надежная обработка ошибок
+# Good example: robust error handling
 func load_player_data() -> bool:
     var save_path = "user://player_save.json"
     
     if not FileAccess.file_exists(save_path):
-        emit_warning("Файл сохранения не найден: " + save_path)
+        emit_warning("Save file not found: " + save_path)
         return false
     
     var file = FileAccess.open(save_path, FileAccess.READ)
     if not file:
-        emit_error("Не удалось открыть файл сохранения")
+        emit_error("Could not open save file")
         return false
     
     var content = file.get_as_text()
@@ -774,31 +774,31 @@ func load_player_data() -> bool:
     
     var json_result = JSON.parse_string(content)
     if not json_result or typeof(json_result) != TYPE_DICTIONARY:
-        emit_error("Неверный формат файла сохранения")
+        emit_error("Invalid save file format")
         return false
     
-    # Успешная загрузка данных
+    # Successful data loading
     player_data = json_result
-    emit_message("Данные игрока загружены")
+    emit_message("Player data loaded")
     return true
 ```
 
-### Плохой код: Отсутствие обработки ошибок
+### Bad Code: Lack of Error Handling
 
 ```gdscript
-# Плохой пример: отсутствие обработки ошибок
+# Bad example: lack of error handling
 func load_player_data() -> void:
-    # Нет проверки на существование файла
+    # No file existence check
     var content = FileAccess.get_file_as_string("user://player_save.json")
     var json_result = JSON.parse_string(content)
-    player_data = json_result  # Может быть null или неверного типа
-    # Нет обработки ошибок, может привести к краху
+    player_data = json_result  # May be null or wrong type
+    # No error handling, may cause crash
 ```
 
-### Хороший код: Асинхронная загрузка с обработкой ошибок
+### Good Code: Asynchronous Loading with Error Handling
 
 ```gdscript
-# Хороший пример: безопасная асинхронная загрузка
+# Good example: safe asynchronous loading
 func load_level_assets(level_name: String) -> void:
     var asset_list = [
         ["level_scene", "res://levels/" + level_name + ".tscn"],
@@ -806,93 +806,93 @@ func load_level_assets(level_name: String) -> void:
         ["level_texture", "res://textures/" + level_name + ".png"]
     ]
     
-    # Подписка на ошибки
+    # Subscribing to errors
     connect_load_error(self._on_asset_load_error)
     connect_load_finished(self._on_all_assets_loaded)
     
-    # Асинхронная загрузка
+    # Asynchronous loading
     load_resources_group_async("level_" + level_name, asset_list)
 
 func _on_asset_load_error(path: String) -> void:
-    emit_error("Ошибка загрузки ресурса: " + path)
-    # Логика восстановления или альтернативный путь
+    emit_error("Resource loading error: " + path)
+    # Recovery logic or alternative path
 
 func _on_all_assets_loaded(loaded_files: Dictionary) -> void:
     if loaded_files.is_empty():
-        emit_error("Не удалось загрузить ресурсы уровня")
+        emit_error("Could not load level resources")
         return
     
-    emit_message("Ресурсы уровня загружены: " + str(loaded_files.size()))
-    # Продолжение загрузки уровня
+    emit_message("Level resources loaded: " + str(loaded_files.size()))
+    # Continue level loading
 ```
 
-## Устранение неполадок
+## Troubleshooting
 
-### Распространенные ошибки
+### Common Errors
 
-#### 1. Пакет не загружается
+#### 1. Package doesn't load
 
-**Проблема**: Пакет не загружается, хотя файлы существуют.
+**Problem**: Package doesn't load even though files exist.
 
-**Решение**:
-- Проверьте структуру пакета (наличие `package_config.tres` и основного скрипта)
-- Убедитесь, что основной скрипт наследуется от `Package`
-- Проверьте зависимости пакета
+**Solution**:
+- Check package structure (presence of `package_config.tres` and main script)
+- Ensure main script inherits from `Package`
+- Check package dependencies
 
 ```gdscript
-# Проверка валидации пакета
+# Package validation check
 var validation_result = GDPackageValidator.validate_package_complete("res://my_package")
 if not validation_result.is_valid:
     for error in validation_result.errors:
-        print("Ошибка валидации: ", error)
+        print("Validation error: ", error)
 ```
 
-#### 2. Ошибка циклической зависимости
+#### 2. Circular dependency error
 
-**Проблема**: Пакеты зависят друг от друга, создавая цикл.
+**Problem**: Packages depend on each other, creating a cycle.
 
-**Решение**:
-- Пересмотрите архитектуру зависимостей
-- Используйте событийную шину для коммуникации вместо прямых зависимостей
+**Solution**:
+- Review dependency architecture
+- Use event bus for communication instead of direct dependencies
 
-#### 3. Ошибка при асинхронной загрузке
+#### 3. Asynchronous loading error
 
-**Проблема**: Ошибка при использовании асинхронной загрузки ресурсов.
+**Problem**: Error when using asynchronous resource loading.
 
-**Решение**:
-- Проверьте правильность путей к ресурсам
-- Убедитесь, что подключены сигналы завершения загрузки
-- Используйте методы отладки
+**Solution**:
+- Check resource path correctness
+- Ensure load completion signals are connected
+- Use debugging methods
 
 ```gdscript
-# Обработка ошибок загрузки
+# Load error handling
 func load_resource_with_error_handling() -> void:
     PackageThreadedResourceManager.load_resource("my_texture", "res://missing_texture.png")
     PackageThreadedResourceManager.connect_load_error(self._on_load_error)
 
 func _on_load_error(path: String) -> void:
-    print("Ошибка загрузки ресурса: ", path)
+    print("Resource loading error: ", path)
 ```
 
 ### FAQ
 
-**Q: Как создать пакет с нуля?**
-A: Используйте контекстное меню редактора Godot - щелкните правой кнопкой мыши в проводнике файлов и выберите "Package".
+**Q: How do I create a package from scratch?**
+A: Use Godot editor's context menu - right-click in the file explorer and select "Package".
 
-**Q: Можно ли использовать пакеты в экспортированном проекте?**
-A: Да, пакеты работают как в редакторе, так и в экспортированном проекте.
+**Q: Can packages be used in exported projects?**
+A: Yes, packages work both in the editor and in exported projects.
 
-**Q: Как обновить пакет в runtime?**
-A: Используйте функции горячей перезагрузки, если включена соответствующая опция в PackageManager.
+**Q: How do I update a package at runtime?**
+A: Use hot reload functions if the appropriate option is enabled in PackageManager.
 
-**Q: Как отладить взаимодействие между пакетами?**
-A: Используйте PackageLogger для логирования и PackageEventBus для мониторинга событий.
+**Q: How do I debug package interactions?**
+A: Use PackageLogger for logging and PackageEventBus for monitoring events.
 
-## Примеры использования
+## Usage Examples
 
-### End-to-End пример: Игровой пакет с UI
+### End-to-End Example: Game Package with UI
 
-Создадим полный пример игрового пакета с пользовательским интерфейсом:
+Create a complete example of a game package with user interface:
 
 ```gdscript
 # health_package.gd
@@ -902,89 +902,89 @@ var health: int = 100
 var max_health: int = 100
 
 func _loaded() -> void:
-    emit_message("Пакет здоровья загружен")
+    emit_message("Health package loaded")
     
-    # Подписка на события
+    # Event subscription
     subscribe_to_event("player_take_damage", self._on_player_take_damage)
     subscribe_to_event("player_heal", self._on_player_heal)
     
-    # Загрузка UI ресурсов
+    # Loading UI resources
     load_health_ui_resources()
 
 func _unloaded() -> void:
-    emit_message("Пакет здоровья выгружен")
+    emit_message("Health package unloaded")
 
 func _message(identity: String, message: String) -> void:
-    print("Сообщение от ", identity, ": ", message)
+    print("Message from ", identity, ": ", message)
 
 func _on_player_take_damage(data: Dictionary) -> void:
     var damage = data.get("amount", 0)
     if damage == null:
-        emit_error("Получены некорректные данные урона: " + str(data))
+        emit_error("Invalid damage data received: " + str(data))
         return
     
     health -= damage
     health = max(0, health)
     
-    # Отправка события об изменении здоровья
+    # Sending event about health change
     emit_event("health_changed", {"current": health, "max": max_health})
     
-    # Обновление UI
+    # Updating UI
     update_health_ui()
 
 func _on_player_heal(data: Dictionary) -> void:
     var heal_amount = data.get("amount", 0)
     if heal_amount == null:
-        emit_error("Получены некорректные данные лечения: " + str(data))
+        emit_error("Invalid healing data received: " + str(data))
         return
         
     health += heal_amount
     health = min(max_health, health)
     
-    # Отправка события об изменении здоровья
+    # Sending event about health change
     emit_event("health_changed", {"current": health, "max": max_health})
     
-    # Обновление UI
+    # Updating UI
     update_health_ui()
 
 func load_health_ui_resources() -> void:
-    # Асинхронная загрузка UI ресурсов
+    # Asynchronous loading of UI resources
     load_resource_async("health_bar_texture", "res://ui/health_bar.png")
     load_resource_async("health_fill_texture", "res://ui/health_fill.png")
     
-    # Подключение к сигналу завершения загрузки
+    # Connecting to the load completion signal
     connect_load_finished(self._on_ui_resources_loaded)
 
 func _on_ui_resources_loaded(loaded_files: Dictionary) -> void:
-    emit_message("UI ресурсы здоровья загружены")
+    emit_message("Health UI resources loaded")
     create_health_ui()
 
 func create_health_ui() -> void:
-    # Создание UI элементов (в реальном проекте здесь будет создание контролов)
-    emit_message("UI здоровья создано")
+    # Creating UI elements (in a real project this would create controls)
+    emit_message("Health UI created")
 
 func update_health_ui() -> void:
-    # Обновление UI (в реальном проекте здесь будет обновление контролов)
+    # Updating UI (in a real project this would update controls)
     var health_percent = float(health) / float(max_health) * 100
-    emit_message("UI здоровья обновлено: " + str(health_percent) + "%")
+    emit_message("Health UI updated: " + str(health_percent) + "%")
 
 func _error(identity: String, message: String) -> bool:
-    emit_message("Ошибка обработана: " + message)
+    emit_message("Error handled: " + message)
     return true
 
 func _unhandled_error(identity: String, message: String) -> void:
-    emit_message("Необработанная ошибка: " + message)
+    emit_message("Unhandled error: " + message)
 
 func _handled_error(identity: String, message: String) -> void:
-    emit_message("Обработанная ошибка: " + message)
+    emit_message("Handled error: " + message)
 ```
 
 ```gdscript
-# Использование пакета здоровья в игровом сценарии
+# Using the health package in a game scenario
 extends Node
 
 func _ready() -> void:
-    # Регистрация и загрузка пакета здоровья
+    # Registering and loading the health package
     var health_package_path = "res://packages/health_package"
     PackageManager.register_package(health_package_path)
     var success = PackageManager.load_lazy_package("health_package")
@@ -992,37 +992,37 @@ func _ready() -> void:
     if success:
         var health_package = PackageManager.get_package("health_package")
         if health_package:
-            # Подписка на события изменения здоровья
+            # Subscribing to health change events
             health_package.subscribe_to_event("health_changed", self._on_health_changed)
             
-            # Симуляция получения урона
+            # Simulating taking damage
             health_package.emit_event("player_take_damage", {"amount": 25})
             
-            # Симуляция лечения
+            # Simulating healing
             health_package.emit_event("player_heal", {"amount": 10})
         else:
-            print("Ошибка: пакет здоровья не найден после загрузки")
+            print("Error: health package not found after loading")
     else:
-        print("Ошибка: не удалось загрузить пакет здоровья")
+        print("Error: could not load health package")
 
 func _on_health_changed(data: Dictionary) -> void:
     var current = data.get("current", 0)
     var max = data.get("max", 100)
-    print("Здоровье изменено: ", current, "/", max)
+    print("Health changed: ", current, "/", max)
 ```
 
-### Пример: Многопоточная загрузка ресурсов
+### Example: Multithreaded Resource Loading
 
 ```gdscript
 # asset_loader_package.gd
 extends Package
 
 func _loaded() -> void:
-    emit_message("Пакет загрузки ресурсов загружен")
+    emit_message("Resource loading package loaded")
     load_game_assets()
 
 func load_game_assets() -> void:
-    # Определение ресурсов для загрузки
+    # Defining resources to load
     var textures_to_load = [
         ["player_sprite", "res://assets/player.png"],
         ["enemy_sprite", "res://assets/enemy.png"],
@@ -1035,35 +1035,35 @@ func load_game_assets() -> void:
         ["menu", "res://scenes/menu.tscn"]
     ]
     
-    # Загрузка текстур
+    # Loading textures
     load_resources_group_async("textures", textures_to_load)
     
-    # Загрузка сцен
+    # Loading scenes
     load_resources_group_async("scenes", scenes_to_load)
     
-    # Подключение к сигналам завершения
+    # Connecting to completion signals
     connect_load_group(self._on_assets_loaded)
     connect_load_finished(self._on_all_assets_loaded)
 
 func _on_assets_loaded(group_name: String, loaded: Dictionary, failed: Dictionary) -> void:
-    emit_message("Группа ресурсов загружена: " + group_name)
+    emit_message("Resource group loaded: " + group_name)
     if failed.size() > 0:
-        emit_warning("Не удалось загрузить: " + str(failed.keys()))
+        emit_warning("Could not load: " + str(failed.keys()))
 
 func _on_all_assets_loaded(loaded_files: Dictionary) -> void:
-    emit_message("Все ресурсы загружены. Количество: " + str(loaded_files.size()))
+    emit_message("All resources loaded. Count: " + str(loaded_files.size()))
     
-    # Использование загруженных ресурсов
+    # Using loaded resources
     var player_sprite = loaded_files.get("player_sprite")
     var level_scene = loaded_files.get("level_1")
     
     if player_sprite:
-        emit_message("Спрайт игрока загружен")
+        emit_message("Player sprite loaded")
     if level_scene:
-        emit_message("Сцена уровня 1 загружена")
+        emit_message("Level 1 scene loaded")
 ```
 
-### Пример: Валидация пакета
+### Example: Package Validation
 
 ```gdscript
 # package_validator_example.gd
@@ -1074,15 +1074,15 @@ func validate_my_package() -> void:
     var result = GDPackageValidator.validate_package_complete(package_path)
     
     if result.is_valid:
-        print("Пакет валиден!")
+        print("Package is valid!")
         for warning in result.warnings:
-            print("Предупреждение: ", warning)
+            print("Warning: ", warning)
     else:
-        print("Пакет НЕ валиден!")
+        print("Package is INVALID!")
         for error in result.errors:
-            print("Ошибка: ", error)
+            print("Error: ", error)
         for warning in result.warnings:
-            print("Предупреждение: ", warning)
+            print("Warning: ", warning)
 ```
 
-Эти примеры демонстрируют полный цикл работы с GDPackages - от создания пакетов до их использования в игровой логике с асинхронной загрузкой ресурсов и коммуникацией через событийную шину.
+These examples demonstrate the complete workflow with GDPackages - from creating packages to using them in game logic with asynchronous resource loading and communication through the event bus.

@@ -1,7 +1,7 @@
 extends Package # logger_package
-## LoggerPackage - Логирование всех ключевых событий
-## Слушает все события и выводит их в консоль
-## Не влияет на игровую логику
+## LoggerPackage - Logging of all key events
+## Listens to all events and outputs them to console
+## Does not affect game logic
 
 const Adapter = preload("logger_package_adapter.gd")
 const Core = preload("src/logger_package_core.gd")

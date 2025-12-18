@@ -1,27 +1,27 @@
-# PackageConfig - Resource для хранения конфигурации пакета
-# Заменяет package.json файл для хранения метаданных пакета
+# PackageConfig - Resource for storing package configuration
+# Replaces package.json file for storing package metadata
 class_name PackageConfig extends Resource
 
 @export_category("Package Info")
-# Имя пакета
+# Package name
 @export var name: String = ""
 
-# Версия пакета
+# Package version
 @export var version: String = "1.0"
 
-# Описание пакета
+# Package description
 @export_multiline var description: String = ""
 
-# Путь к скрипту пакета
+# Path to package script
 @export_file("*.gd") var script_path: String = ""
 
-# Путь к адаптеру пакета (опционально)
+# Path to package adapter (optional)
 @export_file("*.gd") var adapter_path: String = ""
 
-# Зависимости пакета
+# Package dependencies
 @export var dependencies: PackedStringArray = []
 
-# Метод для преобразования в словарь (для совместимости)
+# Method for converting to dictionary (for compatibility)
 func to_dict() -> Dictionary:
 	return {
 		"name": name,
@@ -32,7 +32,7 @@ func to_dict() -> Dictionary:
 		"dependencies": dependencies
 	}
 
-# Метод для инициализации из словаря
+# Method for initializing from dictionary
 func from_dict(dict: Dictionary) -> void:
 	name = dict.get("name", "")
 	version = dict.get("version", "1.0")
@@ -40,5 +40,5 @@ func from_dict(dict: Dictionary) -> void:
 	script_path = dict.get("script", "")
 	adapter_path = dict.get("adapter", "")
 	var deps_array = dict.get("dependencies", [])
-	# Преобразуем массив в PackedStringArray
+	# Convert array to PackedStringArray
 	dependencies = PackedStringArray(deps_array)

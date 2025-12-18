@@ -57,7 +57,7 @@ func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, p
 	print("PackageConfig resource ready: ", config)
 	return config
 
-# Вспомогательная функция для определения типа значения
+# Helper function to determine the type of value
 func _get_type_index(value) -> int:
 	if value is int:
 		return 1
@@ -66,7 +66,7 @@ func _get_type_index(value) -> int:
 	elif value is bool:
 		return 3
 	else:
-		return 0  # float по умолчанию
+		return 0  # default to float
 
 # Template for package scripts
 const PACKAGE_TEMPLATE = """extends Package # {name}
@@ -158,10 +158,16 @@ func _on_create_src_script_pressed(option: Array):
 			print("Created src script: ", parent_dir.path_join(package_name + "_core.gd"))
 		else:
 			push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
+			# Close dialog after error
+			if dialog:
+				dialog.hide()
 		
 		get_editor_interface().get_resource_filesystem().scan()
 	else:
 		push_error("[PackageBuilderPlugin] Not a src directory: ", parent_dir)
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 
 # Handle the event when a package is created through the dialog
 func _on_package_created(package_path: String, package_name: String, package_version: String, package_desc: String, package_deps: Array) -> void:
@@ -192,6 +198,9 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 	print("Save result: ", save_error)
 	if save_error != OK:
 		push_error("[PackageBuilderPlugin] failed to create package config resource file, error code: " + str(save_error))
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 	else:
 		print("Created package config: ", path.path_join("package_config.tres"))
 
@@ -201,6 +210,9 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package main script, open error: ", FileAccess.get_open_error())
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 
 	file = FileAccess.open(path.path_join(package_name + "_adapter.gd"), FileAccess.WRITE)
 	if FileAccess.get_open_error() == OK:
@@ -208,12 +220,18 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package adapter script, open error: ", FileAccess.get_open_error())
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 
 	dir.make_dir(path.path_join("src"))
 	
 	var src_dir_new = DirAccess.open(path.path_join("src"))
 	if src_dir_new.get_open_error() != OK:
 		push_error("[PackageBuilderPlugin] failed to open src directory: ", path.path_join("src"))
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 		return
 	
 	file = FileAccess.open(path.path_join("src").path_join(package_name + "_core.gd"), FileAccess.WRITE)
@@ -222,6 +240,9 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
+		# Close dialog after error
+		if dialog:
+			dialog.hide()
 
 	get_editor_interface().get_resource_filesystem().scan()
 	

@@ -19,9 +19,9 @@ signal batch_load_completed                               # Emitted when all pac
 @export var max_packages_per_frame: int = 1               # Maximum number of packages to load per frame to maintain performance
 @export var process_in_physics_frame: bool = false        # Whether to process loading in physics frame instead of regular frame
 
-# Кэшированные ссылки на часто используемые словари для оптимизации
-# Использование кэшированных ссылок позволяет избежать многократного доступа к статическим переменным PackageManager
-# и улучшает производительность при частом обращении к этим данным
+# Cached references to frequently used dictionaries for optimization
+# Using cached references avoids repeated access to static PackageManager variables
+# and improves performance when frequently accessing this data
 static var _packages_cache = PackageManager.packages
 static var _package_groups_cache = PackageManager.package_groups
 static var _group_bit_registry_cache = PackageManager.group_bit_registry
@@ -35,21 +35,21 @@ var _current_batch_loaded: int = 0                        # Number of packages l
 var _loading_batch: bool = false                          # Whether a batch load operation is currently in progress
 var _dependencies_to_load: Array[String] = []             # Dependencies that need to be loaded
 
-# Кэш конфигураций пакетов для улучшения производительности
+# Cache of package configurations to improve performance
 var _config_cache: Dictionary = {}
-# Максимальный размер кэша конфигураций
+# Maximum size of the configuration cache
 var _max_config_cache_size: int = 100
 
-# Метод для получения конфигурации пакета с использованием кэширования
+# Method to get a package configuration using caching
 func _get_package_config_cached(directory: String) -> Dictionary:
 	if _config_cache.has(directory):
 		return _config_cache[directory]
 	
 	var config := _get_package_config(directory)
 	
-	# Управление размером кэша
+	# Managing the cache size
 	if _config_cache.size() >= _max_config_cache_size:
-		# Удаляем старые элементы кэша, если превышен лимит
+		# Remove old cache items if the limit is exceeded
 		var keys = _config_cache.keys()
 		_config_cache.erase(keys[0])  # Удаляем первый элемент (_FIFO)
 	
@@ -153,7 +153,7 @@ func _process_completed_loads() -> void:
 	var completed_requests = []
 	var requests_count = _threaded_load_requests.size()
 	
-	# Оптимизируем обработку при большом количестве запросов
+	# Optimize processing with a large number of requests
 	if requests_count > 0:
 		var request_ids = _threaded_load_requests.keys()
 		for request_id in request_ids:
@@ -464,11 +464,11 @@ func clear_load_queue() -> void:
 # Safe method to add a package to the scene tree
 func _add_package_to_tree_safe(package_node: Node) -> void:
 	var root = Engine.get_main_loop().get_root()
-	# Проверяем, не добавлен ли узел уже в дерево
+	# Check if the node is already added to the tree
 	if package_node.get_parent() != null:
 		return # Уже в дереве
 		
-	# Проверяем, не запланировано ли уже добавление узла с таким именем
+	# Check if adding a node with this name is already planned
 	var node_name = package_node.name if package_node.name != "" else str(package_node.get_instance_id())
 	if not root.has_node(node_name):
 		root.call_deferred("add_child", package_node)

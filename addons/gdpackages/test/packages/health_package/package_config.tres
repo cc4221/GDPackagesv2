@@ -8,4 +8,3 @@ name = "health_package"
 version = "v1.0"
 script_path = "health_package.gd"
 adapter_path = "health_package_adapter.gd"
-dependencies = PackedStringArray()

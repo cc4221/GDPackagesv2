@@ -5,7 +5,7 @@ class_name PackageEventAdapter extends RefCounted
 # Reference to the PackageEventBus for communication
 var PackageEventBus = preload("res://addons/gdpackages/classes/package_event_bus.gd")
 
-# Кэшированная ссылка на PackageEventBus для улучшения производительности
+# Cached reference to PackageEventBus for improved performance
 var _package_event_bus_cache = PackageEventBus
 
 # Name of the package that owns this adapter
@@ -28,7 +28,7 @@ func subscribe(event_name: String, callback: Callable, filter: Callable = Callab
 func unsubscribe(event_name: String, callback: Callable) -> void:
 	_package_event_bus_cache.unsubscribe(event_name, callback)
 	
-	# Используем более эффективное удаление с сохранением порядка
+	# Using more efficient removal while preserving order
 	var index_to_remove: int = -1
 	for i in range(_subscriptions.size()):
 		var sub = _subscriptions[i]
@@ -41,7 +41,7 @@ func unsubscribe(event_name: String, callback: Callable) -> void:
 
 # Unsubscribe from all events that were subscribed through this adapter
 func unsubscribe_all() -> void:
-	# Используем кэшированную ссылку для улучшения производительности
+	# Using cached reference for improved performance
 	var bus = _package_event_bus_cache
 	for sub in _subscriptions:
 		bus.unsubscribe(sub.event, sub.callback)

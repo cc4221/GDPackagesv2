@@ -1,7 +1,7 @@
 extends Node
-## HealthPackageCore - Ядро системы здоровья
-## Хранит HP и обрабатывает урон/лечение
-## Никакой логики FSM или эффектов
+## HealthPackageCore - Core health system
+## Stores HP and handles damage/healing
+## No FSM logic or effects
 
 class_name HealthPackageCore
 
@@ -10,57 +10,57 @@ const MIN_HP = 1  # Яд не может убить
 
 var _package: Package = null
 var _current_hp: int = MAX_HP
-var _weapon_adapter: PackageAdapter = null  # Ссылка на адаптер оружия
+var _weapon_adapter: PackageAdapter = null  # Reference to weapon adapter
 
 func set_package_reference(package: Package) -> void:
 	_package = package
 	print("[HealthPackageCore] set_package_reference() вызвана, пакет: ", package.config_get_name())
-	# Подписываемся на события от PlayerPackage и статус-эффектов
-	print("[HealthPackageCore] Подписываемся на player.request_attack и player.request_heal...")
+	# Subscribe to events from PlayerPackage and status effects
+	print("[HealthPackageCore] Subscribing to player.request_attack and player.request_heal...")
 	_package.subscribe_to_event("player.request_attack", Callable(self, "_on_player_request_attack"))
 	_package.subscribe_to_event("player.request_heal", Callable(self, "_on_player_request_heal"))
 	_package.subscribe_to_event("health.take_damage", Callable(self, "_on_health_take_damage"))
-	print("[HealthPackageCore] Подписки установлены")
+	print("[HealthPackageCore] Subscriptions set up")
 
 func set_weapon_adapter(adapter) -> void:
 	_weapon_adapter = adapter
-	print("[HealthPackageCore] set_weapon_adapter() вызвана")
+	print("[HealthPackageCore] set_weapon_adapter() called")
 
 func _on_player_request_attack(_data: Variant = null) -> void:
-	print("[HealthPackageCore] player.request_attack получено")
-	## Игрок атакует сам себя
+	print("[HealthPackageCore] player.request_attack received")
+	## Player attacks themselves
 	var damage = 10
 	if _weapon_adapter and _weapon_adapter.is_ready():
 		damage = int(damage * _weapon_adapter.get_damage_multiplier())
-		print("[HealthPackageCore] Множитель урона из weapon_adapter: ", _weapon_adapter.get_damage_multiplier())
+		print("[HealthPackageCore] Damage multiplier from weapon_adapter: ", _weapon_adapter.get_damage_multiplier())
 	else:
-		print("[HealthPackageCore] WeaponAdapter не готов или null, используем базовое значение")
+		print("[HealthPackageCore] WeaponAdapter not ready or null, using base value")
 	
-	print("[HealthPackageCore] Наносим урон: ", damage)
+	print("[HealthPackageCore] Applying damage: ", damage)
 	take_damage(damage)
 
 func _on_player_request_heal(_data: Variant = null) -> void:
-	print("[HealthPackageCore] player.request_heal получено")
-	## Игрок лечит сам себя
+	print("[HealthPackageCore] player.request_heal received")
+	## Player heals themselves
 	var heal_amount = 15
 	if _weapon_adapter and _weapon_adapter.is_ready():
 		heal_amount = int(heal_amount * _weapon_adapter.get_heal_multiplier())
-		print("[HealthPackageCore] Множитель лечения из weapon_adapter: ", _weapon_adapter.get_heal_multiplier())
+		print("[HealthPackageCore] Heal multiplier from weapon_adapter: ", _weapon_adapter.get_heal_multiplier())
 	else:
-		print("[HealthPackageCore] WeaponAdapter не готов или null, используем базовое значение")
+		print("[HealthPackageCore] WeaponAdapter not ready or null, using base value")
 	
-	print("[HealthPackageCore] Лечимся на: ", heal_amount)
+	print("[HealthPackageCore] Healing by: ", heal_amount)
 	heal(heal_amount)
 
-# Новый метод для обработки события загрузки оружия
+# New method for handling weapon loaded event
 func on_weapon_loaded(_data: Variant = null) -> void:
-	print("[HealthPackageCore] Событие weapon.loaded получено")
-	# Получаем адаптер оружия через PackageManager
+	print("[HealthPackageCore] weapon.loaded event received")
+	# Get weapon adapter through PackageManager
 	_weapon_adapter = _package.get_package_adapter("weapon_package")
 	if _weapon_adapter:
-		print("[HealthPackageCore] Адаптер оружия получен")
+		print("[HealthPackageCore] Weapon adapter obtained")
 	else:
-		print("[HealthPackageCore] Не удалось получить адаптер оружия")
+		print("[HealthPackageCore] Failed to get weapon adapter")
 
 func take_damage(amount: int) -> void:
 	_current_hp = max(MIN_HP, _current_hp - amount)
@@ -69,7 +69,7 @@ func take_damage(amount: int) -> void:
 	_package.emit_event("health.changed", data)
 	
 	if _current_hp <= MIN_HP:
-		print("[HealthPackageCore] Игрок мертв!")
+		print("[HealthPackageCore] Player is dead!")
 		_package.emit_event("player.died", {"final_hp": _current_hp})
 
 func heal(amount: int) -> void:
@@ -85,16 +85,16 @@ func get_max_hp() -> int:
 	return MAX_HP
 
 func _on_health_take_damage(data: Variant) -> void:
-	## Обработка урона от статус-эффектов (например, яд)
+	## Handling damage from status effects (e.g., poison)
 	var amount = 1
 	var source = "unknown"
 	
 	if data is Dictionary:
 		amount = data.get("amount", 1)
 		source = data.get("source", "unknown")
-		print("[HealthPackageCore] Получен урон от %s: %d" % [source, amount])
+		print("[HealthPackageCore] Received damage from %s: %d" % [source, amount])
 		
-		# Яд не может убить, оставляет минимум 1 HP
+		# Poison cannot kill, leaves minimum 1 HP
 		if source == "poison":
 			if _current_hp - amount < MIN_HP:
 				amount = max(0, _current_hp - MIN_HP)

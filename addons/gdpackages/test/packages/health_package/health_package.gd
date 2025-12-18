@@ -1,8 +1,8 @@
 extends Package # health_package
-## HealthPackage - Управление здоровьем игрока
-## Обрабатывает урон и лечение
-## Эмитит события: health.changed, player.died
-## Не знает о вводе или FSM
+## HealthPackage - Player health management
+## Handles damage and healing
+## Emits events: health.changed, player.died
+## Doesn't know about input or FSM
 
 const Adapter = preload("health_package_adapter.gd")
 const Core = preload("src/health_package_core.gd")
@@ -16,7 +16,7 @@ func _loaded() -> void:
 	_core.set_package_reference(self)
 	_core.name = "HealthPackageCore"
 	
-	# Подписываемся на событие о загрузке оружия
+	# Subscribe to weapon loading event
 	subscribe_to_event("weapon.loaded", Callable(_core, "on_weapon_loaded"))
 
 func _unloaded() -> void:

@@ -1,8 +1,8 @@
 extends Package # player_package
-## PlayerPackage - Управление состоянием игрока
-## Содержит FSM с состояниями: Idle, Attacking, Healing
-## Не содержит логику здоровья, которая в HealthPackage
-## FSM управляется этим пакетом, статус-эффекты - отдельно
+## PlayerPackage - Player state management
+## Contains FSM with states: Idle, Attacking, Healing
+## Does not contain health logic, which is in HealthPackage
+## FSM is controlled by this package, status effects are separate
 
 const Adapter = preload("player_package_adapter.gd")
 const Core = preload("src/player_package_core.gd")

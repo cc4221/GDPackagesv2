@@ -1,8 +1,8 @@
 extends Package # status_effect_package
-## StatusEffectPackage - Управление статус-эффектами
-## Freeze: 4 сек, блокирует атаку и лечение
-## Poison: 5 сек, наносит 1 HP в секунду (не убивает)
-## Эффекты НЕ являются состояниями FSM
+## StatusEffectPackage - Status Effects Management
+## Freeze: 4 sec, blocks attack and healing
+## Poison: 5 sec, deals 1 HP per second (doesn't kill)
+## Effects are NOT FSM states
 
 const Adapter = preload("status_effect_package_adapter.gd")
 const Core = preload("src/status_effect_package_core.gd")

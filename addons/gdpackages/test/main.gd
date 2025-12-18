@@ -1,40 +1,40 @@
 extends Node2D
-## Точка входа для демонстрационной RPG-системы на основе GDPackages
+## Entry point for the GDPackages-based demo RPG system
 
 func _ready() -> void:
 	print("\n========== GDPackages RPG System Demo ==========\n")
-	print("Инициализация пакетов...")
+	print("Initializing packages...")
 	
-	# Загружаем все пакеты из директории
+	# Loading all packages from the directory
 	PackageManager.load_packages_in_directory("res://addons/gdpackages/test/packages/")
 	
-	print("\n========== Система инициализирована ==========")
-	print("\nУправление:")
-	print("  [1] - Атаковать себя")
-	print("  [2] - Лечить себя")
-	print("  [3] - Применить заморозку")
-	print("  [4] - Применить яд")
+	print("\n========== System Initialized ==========")
+	print("\nControls:")
+	print("  [1] - Attack self")
+	print("  [2] - Heal self")
+	print("  [3] - Apply freeze")
+	print("  [4] - Apply poison")
 	print("\n=========================================\n")
 	
-	# Даем небольшую задержку перед инициализацией переключателя пакетов
+	# Give a small delay before initializing package switcher
 	await get_tree().process_frame
 	_initialize_package_connections()
 	_add_packages_to_scene()
 
 func _add_packages_to_scene() -> void:
-	## Добавляем пакеты в дерево сцены чтобы они получали input события
-	print("[DEBUG] Начало добавления пакетов в сцену")
-	print("[DEBUG] Всего пакетов: ", PackageManager.packages.keys().size())
+	## Adding packages to the scene tree so they receive input events
+	print("[DEBUG] Starting to add packages to the scene")
+	print("[DEBUG] Total packages: ", PackageManager.packages.keys().size())
 	for package_name in PackageManager.packages.keys():
 		var package = PackageManager.get_package(package_name)
-		print("[DEBUG] Проверяю пакет: %s (null=%s, has_parent=%s)" % [package_name, package == null, package and package.get_parent() != null])
+		print("[DEBUG] Checking package: %s (null=%s, has_parent=%s)" % [package_name, package == null, package and package.get_parent() != null])
 		if package and not package.get_parent():
 			add_child(package)
-			print("[SCENE] Пакет %s добавлен в сцену" % package_name)
+			print("[SCENE] Package %s added to scene" % package_name)
 
 func _initialize_package_connections() -> void:
-	## Настраиваем связь между пакетами после загрузки
-	print("[DEBUG] Начало инициализации связей между пакетами")
+	## Setting up connection between packages after loading
+	print("[DEBUG] Starting initialization of connections between packages")
 	
 	var health_pkg = PackageManager.get_package("health_package")
 	var weapon_pkg = PackageManager.get_package("weapon_package")
@@ -47,17 +47,17 @@ func _initialize_package_connections() -> void:
 	print("[DEBUG] player_pkg = %s" % ("null" if player_pkg == null else "ok"))
 	
 	if not health_pkg or not weapon_pkg or not status_pkg or not player_pkg:
-		print("Ошибка: не все пакеты загружены!")
+		print("Error: not all packages loaded!")
 		return
 	
-	# Все связи теперь устанавливаются через события, нет необходимости в прямых вызовах
-	print("[INIT] Связи между пакетами установлены через события")
+	# All connections are now established through events, no need for direct calls
+	print("[INIT] Connections between packages established via events")
 
 func _get_package_core(package: Package):
-	## Вспомогательная функция для получения ядра пакета
+	## Helper function to get the package core
 	for child in package.get_children():
 		if child.get_script():
-			# Проверяем, является ли это ядром пакета
+			# Check if this is the package core
 			if "set_package_reference" in child:
 				return child
 	return null

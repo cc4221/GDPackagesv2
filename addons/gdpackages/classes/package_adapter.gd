@@ -1,14 +1,14 @@
-# PackageAdapter - простой ссылочно-подсчитываемый класс, хранящий информацию о пакете
-# Используется для предоставления дополнительной функциональности или доступа к пакету без раскрытия всего пакета
+# PackageAdapter - a simple reference-counted class holding package information
+# Used to provide additional functionality or access to the package without exposing the entire package
 class_name PackageAdapter extends RefCounted
 
-# Имя пакета, которому принадлежит этот адаптер
+# Name of the package this adapter belongs to
 var _owner_package_name: String = ""
 
-# Конструктор, устанавливающий имя владельца пакета
+# Constructor that sets the package owner name
 func _init(owner_name: String = "") -> void:
 	_owner_package_name = owner_name
 
-# Получить имя пакета, которому принадлежит этот адаптер
+# Get the name of the package this adapter belongs to
 func get_owner_package_name() -> String:
 	return _owner_package_name
