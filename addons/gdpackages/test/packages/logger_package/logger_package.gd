@@ -1,16 +1,25 @@
 extends Package # logger_package
+## LoggerPackage - Логирование всех ключевых событий
+## Слушает все события и выводит их в консоль
+## Не влияет на игровую логику
 
 const Adapter = preload("logger_package_adapter.gd")
-
 const Core = preload("src/logger_package_core.gd")
 
+var _core = null
+
 func _loaded() -> void:
-	emit_message("loaded successfully.")
-	var core_instance = Core.new()
-	core_instance.example_method()
+	emit_message("LoggerPackage loaded successfully.")
+	_core = Core.new()
+	add_child(_core)
+	_core.set_package_reference(self)
+	_core.name = "LoggerPackageCore"
 
 func _unloaded() -> void:
-	emit_message("unloaded successfully.")
+	emit_message("LoggerPackage unloaded successfully.")
+	if _core:
+		_core.queue_free()
+		_core = null
 
 func _message(_identity: String, _msg: String) -> void:
 	pass

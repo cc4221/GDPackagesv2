@@ -1,16 +1,6 @@
 # PackageEventBus is a global event system that allows packages to communicate with each other
 # It provides event emission, subscription, filtering, caching, and statistics
-# Кэшируем часто используемые словари для улучшения производительности
 class_name PackageEventBus extends RefCounted
-
-# Кэшированные ссылки на часто используемые словари для оптимизации производительности
-# Использование кэшированных ссылок уменьшает время доступа к словарям и улучшает общую производительность системы
-static var _subscribers_cache = _subscribers
-static var _name_to_id_cache = _name_to_id
-static var _id_to_name_cache = _id_to_name
-static var _event_cache_cache = _event_cache
-static var _stats_cache = _stats
-
 
 # Internal class to represent an event subscription with callback, package name, and optional filter
 class EventSubscription:
@@ -82,15 +72,15 @@ static func _ensure_runner() -> void:
 
 # Get or create an event ID for the given event name
 static func _get_event_id(event_name: StringName) -> int:
-	if _name_to_id_cache.has(event_name):
-		return _name_to_id_cache[event_name]
+	if _name_to_id.has(event_name):
+		return _name_to_id[event_name]
 	var id = _next_event_id
 	_next_event_id += 1
-	_name_to_id_cache[event_name] = id
-	_id_to_name_cache[id] = event_name
+	_name_to_id[event_name] = id
+	_id_to_name[id] = event_name
 	# Initialize cache for this event if caching is enabled
 	if max_cache_size > 0:
-		_event_cache_cache[event_name] = []
+		_event_cache[event_name] = []
 	return id
 
 # Subscribe to an event with a callback, optional package name, and optional filter
@@ -107,55 +97,55 @@ static func subscribe(event_name: StringName, callback: Callable, package_name: 
 
 # Unsubscribe a specific callback from an event
 static func unsubscribe(event_name: StringName, callback: Callable) -> void:
-	if not _name_to_id_cache.has(event_name):
+	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id_cache[event_name]
-	if not _subscribers_cache.has(id):
+	var id = _name_to_id[event_name]
+	if not _subscribers.has(id):
 		return
-	var subs = _subscribers_cache[id]
+	var subs = _subscribers[id]
 	var subs_count = subs.size()
 	for i in range(subs_count - 1, -1, -1):
 		if subs[i].callback == callback:
 			subs.remove_at(i)
 			break
 	if subs.is_empty():
-		_subscribers_cache.erase(id)
+		_subscribers.erase(id)
 
 
 # Unsubscribe all callbacks from a specific event
 static func unsubscribe_all(event_name: StringName) -> void:
-	if _name_to_id_cache.has(event_name):
-		var id = _name_to_id_cache[event_name]
-		_subscribers_cache.erase(id)
+	if _name_to_id.has(event_name):
+		var id = _name_to_id[event_name]
+		_subscribers.erase(id)
 
 
 # Emit an event to all subscribers
 # Updates statistics and cache if enabled, and applies filters
 static func emit(event_name: StringName, data: Variant = null, source: String = "") -> void:
 	if track_stats:
-		if not _stats_cache.has(event_name):
-			_stats_cache[event_name] = {"count": 0, "last_emitted": 0.0}
-		_stats_cache[event_name]["count"] += 1
-		_stats_cache[event_name]["last_emitted"] = Time.get_ticks_msec() / 1000.0
+		if not _stats.has(event_name):
+			_stats[event_name] = {"count": 0, "last_emitted": 0.0}
+		_stats[event_name]["count"] += 1
+		_stats[event_name]["last_emitted"] = Time.get_ticks_msec() / 1000.0
 	
 	# Add event to cache if caching is enabled
-	if max_cache_size > 0 and _event_cache_cache.has(event_name):
-		_event_cache_cache[event_name].append({
+	if max_cache_size > 0 and _event_cache.has(event_name):
+		_event_cache[event_name].append({
 			"data": data,
 			"source": source,
 			"timestamp": Time.get_ticks_msec()
 		})
-		if _event_cache_cache[event_name].size() > max_cache_size:
-			_event_cache_cache[event_name].remove_at(0)
+		if _event_cache[event_name].size() > max_cache_size:
+			_event_cache[event_name].remove_at(0)
 	
 	# Log the event if logging is enabled
 	if log_events:
 		PackageLogger.log_info(source, "Event: " + str(event_name))
 	
-	if not _name_to_id_cache.has(event_name):
+	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id_cache[event_name]
-	if not _subscribers_cache.has(id):
+	var id = _name_to_id[event_name]
+	if not _subscribers.has(id):
 		return
 
 	# Add to buffer if buffered mode is enabled
@@ -165,7 +155,7 @@ static func emit(event_name: StringName, data: Variant = null, source: String = 
 		return
 
 	# Execute the event for all subscribers
-	var subs = _subscribers_cache[id]
+	var subs = _subscribers[id]
 	var subs_count = subs.size()
 	if subs_count > 0:
 		# Оптимизируем обработку событий для большого количества подписчиков
@@ -180,13 +170,13 @@ static func emit(event_name: StringName, data: Variant = null, source: String = 
 # Emit an event to a specific package only
 static func emit_to_package(event_name: StringName, package_name: String, data: Variant = null,
 						   source: String = "") -> void:
-	if not _name_to_id_cache.has(event_name):
+	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id_cache[event_name]
-	if not _subscribers_cache.has(id):
+	var id = _name_to_id[event_name]
+	if not _subscribers.has(id):
 		return
 	
-	var subs = _subscribers_cache[id]
+	var subs = _subscribers[id]
 	var subs_count = subs.size()
 	if subs_count > 0:
 		for i in range(subs_count):
@@ -200,63 +190,63 @@ static func emit_to_package(event_name: StringName, package_name: String, data: 
 
 # Get the last 'count' cached events for an event name
 static func get_cached_events(event_name: StringName, count: int = 10) -> Array:
-	if not _event_cache_cache.has(event_name):
+	if not _event_cache.has(event_name):
 		return []
-	var cache = _event_cache_cache[event_name]
+	var cache = _event_cache[event_name]
 	var start = max(0, cache.size() - count)
 	return cache.slice(start)
 
 
 # Get all cached events for an event name
 static func get_all_cached_events(event_name: StringName) -> Array:
-	if not _event_cache_cache.has(event_name):
+	if not _event_cache.has(event_name):
 		return []
-	return _event_cache_cache[event_name].duplicate()
+	return _event_cache[event_name].duplicate()
 
 
 # Clear the event cache, either for a specific event or all events
 static func clear_cache(event_name: StringName = "") -> void:
 	if event_name.is_empty():
-		_event_cache_cache.clear()
-	elif _event_cache_cache.has(event_name):
-		_event_cache_cache[event_name].clear()
+		_event_cache.clear()
+	elif _event_cache.has(event_name):
+		_event_cache[event_name].clear()
 
 
 # Get statistics for an event or all events
 static func get_event_stats(event_name: StringName = "") -> Dictionary:
 	if event_name.is_empty():
-		return _stats_cache.duplicate()
-	return _stats_cache.get(event_name, {})
+		return _stats.duplicate()
+	return _stats.get(event_name, {})
 
 
 # Clear all event statistics
 static func clear_stats() -> void:
-	_stats_cache.clear()
+	_stats.clear()
 
 
 # Check if an event has any subscribers
 static func has_subscribers(event_name: StringName) -> bool:
-	if not _name_to_id_cache.has(event_name):
+	if not _name_to_id.has(event_name):
 		return false
-	var id = _name_to_id_cache[event_name]
-	return _subscribers_cache.has(id) and not _subscribers_cache[id].is_empty()
+	var id = _name_to_id[event_name]
+	return _subscribers.has(id) and not _subscribers[id].is_empty()
 
 
 # Get the number of subscribers for an event
 static func get_subscriber_count(event_name: StringName) -> int:
-	if not _name_to_id_cache.has(event_name):
+	if not _name_to_id.has(event_name):
 		return 0
-	var id = _name_to_id_cache[event_name]
-	if not _subscribers_cache.has(id):
+	var id = _name_to_id[event_name]
+	if not _subscribers.has(id):
 		return 0
-	return _subscribers_cache[id].size()
+	return _subscribers[id].size()
 
 
 # Get a list of all registered event names
 static func get_registered_events() -> PackedStringArray:
 	var result: PackedStringArray = PackedStringArray()
-	for id in _subscribers_cache.keys():
-		var name = _id_to_name_cache.get(id, "")
+	for id in _subscribers.keys():
+		var name = _id_to_name.get(id, "")
 		if name != "":
 			result.append(str(name))
 	return result
@@ -265,8 +255,8 @@ static func get_registered_events() -> PackedStringArray:
 # Get registered events with their subscriber counts
 static func get_registered_events_with_counts() -> Dictionary:
 	var result: Dictionary = {}
-	for id in _subscribers_cache.keys():
-		var name = _id_to_name_cache.get(id, "")
+	for id in _subscribers.keys():
+		var name = _id_to_name.get(id, "")
 		if name != "":
 			result[str(name)] = get_subscriber_count(name)
 	return result
@@ -274,12 +264,12 @@ static func get_registered_events_with_counts() -> Dictionary:
 
 # Clear all subscribers, cache, and statistics (resets the event bus)
 static func clear_all() -> void:
-	_subscribers_cache.clear()
+	_subscribers.clear()
 	_event_cache.clear()
 	# Convert stats keys to StringName if needed before clearing
-	_stats_cache.clear()
-	_name_to_id_cache.clear()
-	_id_to_name_cache.clear()
+	_stats.clear()
+	_name_to_id.clear()
+	_id_to_name.clear()
 	_next_event_id = 1
 	_buffer.clear()
 
@@ -297,8 +287,8 @@ static func _flush_buffer() -> void:
 		processed += 1
 		var id = item.get("id")
 		var data = item.get("data")
-		if _subscribers_cache.has(id):
-			var subs = _subscribers_cache[id]
+		if _subscribers.has(id):
+			var subs = _subscribers[id]
 			var subs_count = subs.size()
 			if subs_count > 0:
 				for i in range(subs_count):
