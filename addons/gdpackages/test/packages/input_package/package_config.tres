@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PackageConfig" format=3 uid="uid://uusowove7cpl"]
+
+[ext_resource type="Script" uid="uid://dekpakvtprd61" path="res://addons/gdpackages/classes/package_config.gd" id="1_w75t6"]
+
+[resource]
+script = ExtResource("1_w75t6")
+name = "input_package"
+version = "v1.0"
+script_path = "input_package.gd"
+adapter_path = "input_package_adapter.gd"
+dependencies = PackedStringArray()

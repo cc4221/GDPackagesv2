@@ -201,7 +201,35 @@ static func _get_type_index(value) -> int:
 
 # Load the root script file for a package and return an instance of it
 static func _get_package_root(directory: String, config: Dictionary) -> Package:
-	var path: String = directory.path_join(config.get("script", ""))
+	var script_value = config.get("script", "")
+	var path: String = ""
+	
+	# Проверяем, является ли значение UID-ссылкой или строковым путем
+	if script_value is String:
+		if script_value.begins_with("uid://"):
+			# Если это UID-ссылка, пытаемся получить путь к ресурсу
+			var resource_path = script_value
+			var resource = ResourceLoader.load(resource_path)
+			if resource and resource.resource_path:
+				path = resource.resource_path
+			else:
+				# Если не удалось получить путь через UID, пробуем найти файл в директории
+				push_warning("Could not load resource by UID: " + script_value + ", trying to find in directory: " + directory)
+				# Ищем файл в директории пакета
+				var dir_access = DirAccess.open(directory)
+				if dir_access:
+					dir_access.list_dir_begin()
+					var file_name = dir_access.get_next()
+					while file_name != "":
+						if not dir_access.current_is_dir() and file_name.ends_with(".gd"):
+							if file_name != "package_config.tres" and file_name != "package_config.gd":
+								path = directory.path_join(file_name)
+								break
+						file_name = dir_access.get_next()
+		else:
+			# Если это обычный путь, используем его напрямую
+			path = directory.path_join(script_value)
+	
 	var result = load(path).new()
 	if result is Package:
 		return result
@@ -388,16 +416,44 @@ static func load_package(directory: String, group: String = "", dependency_chain
 	
 	root._config = config
 	
-	var adapter_path = config.get("adapter", "")
-	if !adapter_path.is_empty():
-		var adapter_script = load(directory.path_join(adapter_path))
-		if adapter_script:
-			var adapter_instance = adapter_script.new(package_name)
-			root.adapter = adapter_instance
-			_adapters_cache[package_name] = adapter_instance
-			
-			if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
-				adapter_instance.subscribe_to_events()
+	var adapter_value = config.get("adapter", "")
+	if adapter_value and adapter_value != "":
+		var adapter_path: String = ""
+		
+		# Проверяем, является ли значение UID-ссылкой или строковым путем
+		if adapter_value is String:
+			if adapter_value.begins_with("uid://"):
+				# Если это UID-ссылка, пытаемся получить путь к ресурсу
+				var resource_path = adapter_value
+				var resource = ResourceLoader.load(resource_path)
+				if resource and resource.resource_path:
+					adapter_path = resource.resource_path
+				else:
+					# Если не удалось получить путь через UID, пробуем найти файл в директории
+					push_warning("Could not load adapter resource by UID: " + adapter_value + ", trying to find in directory: " + directory)
+					# Ищем файл в директории пакета
+					var dir_access = DirAccess.open(directory)
+					if dir_access:
+						dir_access.list_dir_begin()
+						var file_name = dir_access.get_next()
+						while file_name != "":
+							if not dir_access.current_is_dir() and file_name.ends_with("_adapter.gd"):
+								adapter_path = directory.path_join(file_name)
+								break
+							file_name = dir_access.get_next()
+			else:
+				# Если это обычный путь, используем его напрямую
+				adapter_path = directory.path_join(adapter_value)
+		
+		if adapter_path != "":
+			var adapter_script = load(adapter_path)
+			if adapter_script:
+				var adapter_instance = adapter_script.new(package_name)
+				root.adapter = adapter_instance
+				_adapters_cache[package_name] = adapter_instance
+				
+				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
+					adapter_instance.subscribe_to_events()
 
 	root._loaded()
 	
@@ -507,16 +563,44 @@ static func load_lazy_package(package_name: String, dependency_chain: Array[Stri
 	
 	_lazy_packages_cache.erase(package_name)
 	
-	var adapter_path = config.get("adapter", "")
-	if !adapter_path.is_empty():
-		var adapter_script = load(directory.path_join(adapter_path))
-		if adapter_script:
-			var adapter_instance = adapter_script.new(package_name)
-			root.adapter = adapter_instance
-			_adapters_cache[package_name] = adapter_instance
-			
-			if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
-				adapter_instance.subscribe_to_events()
+	var adapter_value = config.get("adapter", "")
+	if adapter_value and adapter_value != "":
+		var adapter_path: String = ""
+		
+		# Проверяем, является ли значение UID-ссылкой или строковым путем
+		if adapter_value is String:
+			if adapter_value.begins_with("uid://"):
+				# Если это UID-ссылка, пытаемся получить путь к ресурсу
+				var resource_path = adapter_value
+				var resource = ResourceLoader.load(resource_path)
+				if resource and resource.resource_path:
+					adapter_path = resource.resource_path
+				else:
+					# Если не удалось получить путь через UID, пробуем найти файл в директории
+					push_warning("Could not load adapter resource by UID: " + adapter_value + ", trying to find in directory: " + directory)
+					# Ищем файл в директории пакета
+					var dir_access = DirAccess.open(directory)
+					if dir_access:
+						dir_access.list_dir_begin()
+						var file_name = dir_access.get_next()
+						while file_name != "":
+							if not dir_access.current_is_dir() and file_name.ends_with("_adapter.gd"):
+								adapter_path = directory.path_join(file_name)
+								break
+							file_name = dir_access.get_next()
+			else:
+				# Если это обычный путь, используем его напрямую
+				adapter_path = directory.path_join(adapter_value)
+		
+		if adapter_path != "":
+			var adapter_script = load(adapter_path)
+			if adapter_script:
+				var adapter_instance = adapter_script.new(package_name)
+				root.adapter = adapter_instance
+				_adapters_cache[package_name] = adapter_instance
+				
+				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
+					adapter_instance.subscribe_to_events()
 
 	root._loaded()
 	

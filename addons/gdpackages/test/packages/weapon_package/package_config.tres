@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PackageConfig" format=3 uid="uid://c3t352lqjhbst"]
+
+[ext_resource type="Script" uid="uid://dekpakvtprd61" path="res://addons/gdpackages/classes/package_config.gd" id="1_vo2xe"]
+
+[resource]
+script = ExtResource("1_vo2xe")
+name = "weapon_package"
+version = "v1.0"
+script_path = "weapon_package.gd"
+adapter_path = "weapon_package_adapter.gd"
+dependencies = PackedStringArray()
