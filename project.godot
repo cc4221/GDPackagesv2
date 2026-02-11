@@ -39,4 +39,5 @@ environment/ssao/quality=3
 environment/ssil/quality=3
 environment/subsurface_scattering/subsurface_scattering_quality=3
 global_illumination/sdfgi/probe_ray_count=2
+occlusion_culling/use_occlusion_culling=true
 environment/screen_space_reflection/roughness_quality=2

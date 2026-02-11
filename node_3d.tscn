@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://ron7cgtb1fod"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_4xowi"]
+
+[node name="Node3D" type="Node3D" unique_id=947764638]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=497912434]
+mesh = SubResource("CapsuleMesh_4xowi")
+
+[node name="OccluderInstance3D" type="OccluderInstance3D" parent="MeshInstance3D" unique_id=1228829622]
