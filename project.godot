@@ -10,11 +10,34 @@ config_version=5
 
 [application]
 
-config/name="GDPackages"
-run/main_scene="uid://b2nuktivck23f"
-config/features=PackedStringArray("4.5", "Forward Plus")
+config/name="GDPackagesv2"
+run/main_scene="uid://cajudwk0ey0nm"
+config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[dotnet]
+
+project/assembly_name="Project GEOR"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/gdpackages/plugin.cfg")
+enabled=PackedStringArray("res://addons/gdpackages/plugin.cfg", "res://addons/godot_context_exporter/plugin.cfg")
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=2
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=5
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality.mobile=5
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=4
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality.mobile=5
+global_illumination/voxel_gi/quality=1
+environment/ssao/quality=3
+environment/ssil/quality=3
+environment/subsurface_scattering/subsurface_scattering_quality=3
+global_illumination/sdfgi/probe_ray_count=2
+occlusion_culling/use_occlusion_culling=true
+environment/screen_space_reflection/roughness_quality=2

@@ -1,3 +1,6 @@
+# Ignore godot_context_exporter addon (generated / local tool)
+addons/godot_context_exporter/
+
 # Godot 4+ specific ignores
 .godot/
 
