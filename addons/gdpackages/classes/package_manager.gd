@@ -350,6 +350,13 @@ static func load_package(directory: String, group: String = "", dependency_chain
 	
 	root._config = config
 	
+	var core_value = config.get("core", "")
+	if core_value != "":
+		var core_path = directory.path_join(core_value)
+		var core_script = load(core_path)
+		if core_script:
+			root.core = core_script.new()
+	
 	var adapter_value = config.get("adapter", "")
 	if adapter_value and adapter_value != "":
 		var adapter_path: String = ""
@@ -377,7 +384,7 @@ static func load_package(directory: String, group: String = "", dependency_chain
 		if adapter_path != "":
 			var adapter_script = load(adapter_path)
 			if adapter_script:
-				var adapter_instance = adapter_script.new(package_name)
+				var adapter_instance = adapter_script.new()
 				root.adapter = adapter_instance
 				_adapters_cache[package_name] = adapter_instance
 				
@@ -476,6 +483,13 @@ static func load_lazy_package(package_name: String, dependency_chain: Array[Stri
 	_add_package_to_tree(root)
 	
 	root._config = config
+	
+	var core_value = config.get("core", "")
+	if core_value != "":
+		var core_path = directory.path_join(core_value)
+		var core_script = load(core_path)
+		if core_script:
+			root.core = core_script.new()
 	
 	_lazy_packages_cache.erase(package_name)
 	

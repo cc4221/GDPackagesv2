@@ -229,7 +229,7 @@ func _finish_adapter_load(request_info: Dictionary, loaded_resource) -> void:
 	
 	var adapter_instance = null
 	if loaded_resource:
-		adapter_instance = loaded_resource.new(package_name)
+		adapter_instance = loaded_resource.new()
 		if adapter_instance:
 			package_instance.adapter = adapter_instance
 			_adapters_cache[package_name] = adapter_instance

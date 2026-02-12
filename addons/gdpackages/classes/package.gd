@@ -13,6 +13,8 @@ signal ready_complete
 
 var adapter: PackageAdapter = null
 
+var core: RefCounted = null
+
 @abstract func _loaded() -> void
 
 @abstract func _unloaded() -> void

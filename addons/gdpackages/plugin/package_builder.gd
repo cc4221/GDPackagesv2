@@ -41,6 +41,12 @@ func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, p
 	print("Set script_path: ", pkg_name + ".gd")
 	config.adapter_path = pkg_name + "_adapter.gd"
 	print("Set adapter_path: ", pkg_name + "_adapter.gd")
+	
+	# --- ИЗМЕНЕНИЕ: Устанавливаем путь к Core скрипту ---
+	config.core_path = "src/" + pkg_name + "_core.gd"
+	print("Set core_path: ", config.core_path)
+	# ----------------------------------------------------
+	
 	config.dependencies = PackedStringArray(pkg_deps)
 	print("Set dependencies: ", PackedStringArray(pkg_deps))
 	
@@ -57,16 +63,18 @@ func _get_type_index(value) -> int:
 	else:
 		return 0
 
+
 const PACKAGE_TEMPLATE = """extends Package # {name}
 
+const Core = preload("src/{name}_core.gd")
 const Adapter = preload("{name}_adapter.gd")
 
-const Core = preload("src/{name}_core.gd")
 
 func _loaded() -> void:
+	var core = Core.new()
+	core.example_method()
+	Adapter.say_hello()
 	emit_message("loaded successfully.")
-	var core_instance = Core.new()
-	core_instance.example_method()
 
 func _unloaded() -> void:
 	emit_message("unloaded successfully.")
@@ -86,14 +94,15 @@ func _unhandled_error(_identity: String, _msg: String) -> void:
 func _handled_error(_identity: String, _msg: String) -> void:
 	pass
 """
+# --------------------------------------------------------------
 
 func _new_package_script(pkg_name: String, pkg_desc: String) -> String:
 	return PACKAGE_TEMPLATE.format({"name": pkg_name})
 
 func _new_package_adapter_script(pkg_name: String) -> String:
 	var result: String = "extends PackageAdapter"
-	result += "\n\nfunc _init(owner_name: String = \"\") -> void:"
-	result += "\n\t_owner_package_name = owner_name"
+	result += "\n\nstatic func say_hello() -> void:"
+	result += "\n\tprint(\"Example method called from " + pkg_name + " adapter\")"
 	return result
 
 func _new_package_src_script(pkg_name: String) -> String:
@@ -163,6 +172,7 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 	print("Config description: ", config.description)
 	print("Config script_path: ", config.script_path)
 	print("Config adapter_path: ", config.adapter_path)
+	print("Config core_path: ", config.core_path)
 	print("Config dependencies: ", config.dependencies)
 
 	print("Attempting to save Resource to: ", path.path_join("package_config.tres"))

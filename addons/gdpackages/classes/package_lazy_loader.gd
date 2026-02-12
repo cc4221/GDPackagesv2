@@ -71,7 +71,7 @@ func _load_package_without_init(directory: String) -> Package:
 	if !adapter_path.is_empty():
 		var adapter_script = load(directory.path_join(adapter_path))
 		if adapter_script:
-			var adapter_instance = adapter_script.new(package_name)
+			var adapter_instance = adapter_script.new()
 			root.adapter = adapter_instance
 			PackageManager._adapters[package_name] = adapter_instance
 

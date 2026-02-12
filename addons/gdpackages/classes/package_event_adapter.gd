@@ -7,8 +7,6 @@ var _package_event_bus_cache = PackageEventBus
 var _package_name: String
 var _subscriptions: Array = []
 
-func _init(package_name: String = "") -> void:
-	_package_name = package_name
 
 func subscribe(event_name: String, callback: Callable, filter: Callable = Callable()) -> void:
 	_package_event_bus_cache.subscribe(event_name, callback, _package_name, filter)

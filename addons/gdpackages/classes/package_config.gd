@@ -11,6 +11,8 @@ class_name PackageConfig extends Resource
 
 @export_file("*.gd") var adapter_path: String = ""
 
+@export_file("*.gd") var core_path: String = ""
+
 @export var dependencies: PackedStringArray = []
 
 func to_dict() -> Dictionary:
@@ -20,6 +22,7 @@ func to_dict() -> Dictionary:
 		"description": description,
 		"script": script_path,
 		"adapter": adapter_path,
+		"core": core_path,
 		"dependencies": dependencies
 	}
 
@@ -29,5 +32,6 @@ func from_dict(dict: Dictionary) -> void:
 	description = dict.get("description", "")
 	script_path = dict.get("script", "")
 	adapter_path = dict.get("adapter", "")
+	core_path = dict.get("core", "")
 	var deps_array = dict.get("dependencies", [])
 	dependencies = PackedStringArray(deps_array)
