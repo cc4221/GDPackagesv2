@@ -36,6 +36,14 @@ static func validate_package(package_path: String) -> ValidationResult:
 	var src_dir_access = DirAccess.open(src_dir)
 	if src_dir_access == null:
 		result.warnings.append("Recommended src directory not found: " + src_dir)
+	else:
+		var adapters_dir = src_dir.path_join("adapters")
+		var adapters_dir_access = DirAccess.open(adapters_dir)
+		var sub_adapter_file = adapters_dir.path_join(package_path.get_file() + "_sub_adapter.gd")
+		if adapters_dir_access == null:
+			result.warnings.append("Recommended adapters directory not found: " + adapters_dir)
+		elif not FileAccess.file_exists(sub_adapter_file):
+			result.warnings.append("Recommended sub adapter file not found: " + sub_adapter_file)
 	
 	var config_path = package_path.path_join("package_config.tres")
 	if FileAccess.file_exists(config_path):

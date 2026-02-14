@@ -47,6 +47,11 @@ func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, p
 	print("Set core_path: ", config.core_path)
 	# ----------------------------------------------------
 	
+	# --- ИЗМЕНЕНИЕ: Устанавливаем путь к SubAdapter скрипту ---
+	config.sub_adapter_path = "src/adapters/" + pkg_name + "_sub_adapter.gd"
+	print("Set sub_adapter_path: ", config.sub_adapter_path)
+	# ----------------------------------------------------
+	
 	config.dependencies = PackedStringArray(pkg_deps)
 	print("Set dependencies: ", PackedStringArray(pkg_deps))
 	
@@ -68,12 +73,18 @@ const PACKAGE_TEMPLATE = """extends Package # {name}
 
 const Core = preload("src/{name}_core.gd")
 const Adapter = preload("{name}_adapter.gd")
+const SubAdapter = preload("src/adapters/{name}_sub_adapter.gd")
 
 
 func _loaded() -> void:
 	var core = Core.new()
+	var adapter = Adapter.new()
+	var sub_adapter = SubAdapter.new()
+	
 	core.example_method()
-	Adapter.say_hello()
+	adapter.say_hello()
+	sub_adapter.example_method()
+	
 	emit_message("loaded successfully.")
 
 func _unloaded() -> void:
@@ -110,6 +121,12 @@ func _new_package_src_script(pkg_name: String) -> String:
 	result += "\n\nclass_name " + pkg_name.capitalize().replace(" ", "") + "Core"
 	result += "\n\nfunc example_method() -> void:"
 	result += "\n\tprint(\"Example method called from " + pkg_name + " core\")"
+	return result
+
+func _new_package_sub_adapter_script(pkg_name: String) -> String:
+	var result: String = "extends PackageAdapter"
+	result += "\n\nfunc example_method() -> void:"
+	result += "\n\tprint(\"Example method called from " + pkg_name + " sub adapter\")"
 	return result
 
 func _on_create_package_pressed(option: Array):
@@ -210,6 +227,26 @@ func _on_package_created(package_path: String, package_name: String, package_ver
 		file.close()
 	else:
 		push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
+
+	# Создание папки adapters и файла SubAdapter
+	var adapters_dir = DirAccess.open(path.path_join("src"))
+	if adapters_dir.get_open_error() != OK:
+		adapters_dir = DirAccess.open(path)
+		if adapters_dir.get_open_error() == OK:
+			adapters_dir.make_dir("src/adapters")
+		else:
+			push_error("[PackageBuilderPlugin] failed to create src directory for sub adapter: ", path.path_join("src"))
+	else:
+		adapters_dir.make_dir("adapters")
+
+	var adapters_path = path.path_join("src/adapters")
+	var sub_adapter_file = FileAccess.open(adapters_path.path_join(package_name + "_sub_adapter.gd"), FileAccess.WRITE)
+	if FileAccess.get_open_error() == OK:
+		sub_adapter_file.store_string(_new_package_sub_adapter_script(package_name))
+		sub_adapter_file.close()
+		print("Created sub adapter script: ", adapters_path.path_join(package_name + "_sub_adapter.gd"))
+	else:
+		push_error("[PackageBuilderPlugin] failed to create package sub adapter script, open error: ", FileAccess.get_open_error())
 
 	get_editor_interface().get_resource_filesystem().scan()
 	
