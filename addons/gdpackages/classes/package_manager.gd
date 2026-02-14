@@ -390,6 +390,38 @@ static func load_package(directory: String, group: String = "", dependency_chain
 				
 				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
 					adapter_instance.subscribe_to_events()
+	
+	# Загрузка SubAdapter (если он существует)
+	var sub_adapter_value = config.get("sub_adapter", "")
+	if sub_adapter_value and sub_adapter_value != "":
+		var sub_adapter_path: String = ""
+
+		if sub_adapter_value is String:
+			if sub_adapter_value.begins_with("uid://"):
+				var resource_path = sub_adapter_value
+				var resource = ResourceLoader.load(resource_path)
+				if resource and resource.resource_path:
+					sub_adapter_path = resource.resource_path
+				else:
+					push_warning("Could not load sub adapter resource by UID: " + sub_adapter_value + ", trying to find in directory: " + directory)
+					var dir_access = DirAccess.open(directory)
+					if dir_access:
+						dir_access.list_dir_begin()
+						var file_name = dir_access.get_next()
+						while file_name != "":
+							if not dir_access.current_is_dir() and file_name.ends_with("_sub_adapter.gd"):
+								sub_adapter_path = directory.path_join(file_name)
+								break
+							file_name = dir_access.get_next()
+			else:
+				sub_adapter_path = directory.path_join(sub_adapter_value)
+		
+		if sub_adapter_path != "":
+			var sub_adapter_script = load(sub_adapter_path)
+			if sub_adapter_script:
+				var sub_adapter_instance = sub_adapter_script.new()
+				if root.adapter:
+					root.adapter.sub_adapter = sub_adapter_instance
 
 	root._loaded()
 	
@@ -526,6 +558,38 @@ static func load_lazy_package(package_name: String, dependency_chain: Array[Stri
 				
 				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
 					adapter_instance.subscribe_to_events()
+
+	# Загрузка SubAdapter (если он существует)
+	var sub_adapter_value = config.get("sub_adapter", "")
+	if sub_adapter_value and sub_adapter_value != "":
+		var sub_adapter_path: String = ""
+
+		if sub_adapter_value is String:
+			if sub_adapter_value.begins_with("uid://"):
+				var resource_path = sub_adapter_value
+				var resource = ResourceLoader.load(resource_path)
+				if resource and resource.resource_path:
+					sub_adapter_path = resource.resource_path
+				else:
+					push_warning("Could not load sub adapter resource by UID: " + sub_adapter_value + ", trying to find in directory: " + directory)
+					var dir_access = DirAccess.open(directory)
+					if dir_access:
+						dir_access.list_dir_begin()
+						var file_name = dir_access.get_next()
+						while file_name != "":
+							if not dir_access.current_is_dir() and file_name.ends_with("_sub_adapter.gd"):
+								sub_adapter_path = directory.path_join(file_name)
+								break
+							file_name = dir_access.get_next()
+			else:
+				sub_adapter_path = directory.path_join(sub_adapter_value)
+		
+		if sub_adapter_path != "":
+			var sub_adapter_script = load(sub_adapter_path)
+			if sub_adapter_script:
+				var sub_adapter_instance = sub_adapter_script.new()
+				if root.adapter:
+					root.adapter.sub_adapter = sub_adapter_instance
 
 	root._loaded()
 	
