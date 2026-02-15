@@ -1,3 +1,4 @@
+@tool
 extends EditorPlugin
 
 const PackageConfig = preload("res://addons/gdpackages/classes/package_config.gd")
