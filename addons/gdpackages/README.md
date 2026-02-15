@@ -122,7 +122,7 @@ math_calc/
 ├── math_calc.gd              # ✅ Controller (Package entry point)
 ├── math_calc_adapter.gd      # ✅ Public API (Adapter)
 └── src/
-    └── math_calc_core.gd     # ✅ Business logic (Core)
+	└── math_calc_core.gd     # ✅ Business logic (Core)
 ```
 
 #### 2.2 Method 2: Manual Creation (optional)
