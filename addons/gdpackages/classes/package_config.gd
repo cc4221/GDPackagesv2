@@ -13,9 +13,12 @@ class_name PackageConfig extends Resource
 
 @export_file("*.gd") var core_path: String = ""
 
-@export_file("*.gd") var sub_adapter_path: String = ""
+# ИЗМЕНЕНИЕ: Используем Array[String] вместо PackedStringArray
+# Это стабильнее работает в инспекторе и позволяет сохранять значения корректно.
+@export var sub_adapters: Array[String] = []
 
-@export var dependencies: PackedStringArray = []
+@export var dependencies: Array[String] = []
+
 
 func to_dict() -> Dictionary:
 	return {
@@ -25,7 +28,7 @@ func to_dict() -> Dictionary:
 		"script": script_path,
 		"adapter": adapter_path,
 		"core": core_path,
-		"sub_adapter": sub_adapter_path,
+		"sub_adapters": sub_adapters,
 		"dependencies": dependencies
 	}
 
@@ -36,6 +39,14 @@ func from_dict(dict: Dictionary) -> void:
 	script_path = dict.get("script", "")
 	adapter_path = dict.get("adapter", "")
 	core_path = dict.get("core", "")
-	sub_adapter_path = dict.get("sub_adapter", "")
+	
+	# Конвертация для безопасности типов
+	var sub_adapters_array = dict.get("sub_adapters", [])
+	sub_adapters = []
+	for item in sub_adapters_array:
+		sub_adapters.append(str(item))
+		
 	var deps_array = dict.get("dependencies", [])
-	dependencies = PackedStringArray(deps_array)
+	dependencies = []
+	for item in deps_array:
+		dependencies.append(str(item))

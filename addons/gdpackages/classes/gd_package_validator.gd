@@ -8,6 +8,7 @@ class ValidationResult:
 	func _init(valid: bool = false) -> void:
 		is_valid = valid
 
+# 1. Проверка структуры и конфига
 static func validate_package(package_path: String) -> ValidationResult:
 	var result = ValidationResult.new(true)
 	
@@ -36,14 +37,6 @@ static func validate_package(package_path: String) -> ValidationResult:
 	var src_dir_access = DirAccess.open(src_dir)
 	if src_dir_access == null:
 		result.warnings.append("Recommended src directory not found: " + src_dir)
-	else:
-		var adapters_dir = src_dir.path_join("adapters")
-		var adapters_dir_access = DirAccess.open(adapters_dir)
-		var sub_adapter_file = adapters_dir.path_join(package_path.get_file() + "_sub_adapter.gd")
-		if adapters_dir_access == null:
-			result.warnings.append("Recommended adapters directory not found: " + adapters_dir)
-		elif not FileAccess.file_exists(sub_adapter_file):
-			result.warnings.append("Recommended sub adapter file not found: " + sub_adapter_file)
 	
 	var config_path = package_path.path_join("package_config.tres")
 	if FileAccess.file_exists(config_path):
@@ -59,35 +52,49 @@ static func validate_package(package_path: String) -> ValidationResult:
 			if config_resource.version.is_empty():
 				result.is_valid = false
 				result.errors.append("Package config has empty version")
+			
+			# Проверка sub_adapters (поддержка Array)
+			if "sub_adapters" in config_resource and config_resource.sub_adapters is Array:
+				for sub_path in config_resource.sub_adapters:
+					if sub_path is String and not sub_path.is_empty():
+						var full_sub_path = package_path.path_join(sub_path)
+						if not FileAccess.file_exists(full_sub_path):
+							result.warnings.append("Sub-adapter file not found: " + full_sub_path)
+
+	else:
+		result.warnings.append("Package config file not found")
 	
 	return result
 
+# 2. Проверка содержимого главного скрипта (исправлено имя функции и аргумент)
 static func validate_package_script(script_path: String) -> ValidationResult:
 	var result = ValidationResult.new(true)
 	
 	if not FileAccess.file_exists(script_path):
 		result.is_valid = false
 		result.errors.append("Package script does not exist: " + script_path)
-	return result
+		return result
 	
 	var file = FileAccess.open(script_path, FileAccess.READ)
 	if file == null:
 		result.is_valid = false
 		result.errors.append("Could not open package script for reading: " + script_path)
-	return result
+		return result
 	
 	var content = file.get_as_text()
 	file.close()
 	
 	if not content.contains("extends Package"):
 		result.is_valid = false
-	result.errors.append("Package script does not extend Package class: " + script_path)
+		result.errors.append("Package script does not extend Package class: " + script_path)
 	
 	return result
 
+# 3. Полная проверка (вызывает две предыдущие)
 static func validate_package_complete(package_path: String) -> ValidationResult:
 	var result = ValidationResult.new(true)
 	
+	# Проверяем структуру
 	var structure_result = validate_package(package_path)
 	if not structure_result.is_valid:
 		result.is_valid = false
@@ -95,6 +102,7 @@ static func validate_package_complete(package_path: String) -> ValidationResult:
 	
 	result.warnings.append_array(structure_result.warnings)
 	
+	# Проверяем скрипт
 	var script_name = package_path.get_file() + ".gd"
 	var script_result = validate_package_script(package_path.path_join(script_name))
 	if not script_result.is_valid:

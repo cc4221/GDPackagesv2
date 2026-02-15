@@ -1,4 +1,3 @@
-@tool
 extends EditorPlugin
 
 const PackageConfig = preload("res://addons/gdpackages/classes/package_config.gd")
@@ -9,7 +8,6 @@ const PackageContextMenuPlugin = preload("package_context_menu_plugin.gd")
 
 var dialog: ConfirmationDialog
 var ctx: EditorContextMenuPlugin
-var last_file_path: String
 
 func _enter_tree():
 	ctx = PackageContextMenuPlugin.new()
@@ -21,41 +19,33 @@ func _exit_tree() -> void:
 	if dialog:
 		if dialog.get_parent():
 			dialog.get_parent().remove_child(dialog)
-	dialog.queue_free()
+		dialog.queue_free()
 	dialog = null
 	if ctx:
 		remove_context_menu_plugin(ctx)
 	ctx = null
 
 func _new_package_config(pkg_name: String, pkg_vers: String, pkg_desc: String, pkg_deps: Array = []) -> PackageConfig:
-	print("Creating new PackageConfig resource...")
 	var config := PackageConfig.new()
-	print("PackageConfig instance created: ", config)
+	
 	config.name = pkg_name
-	print("Set name: ", pkg_name)
 	config.version = pkg_vers
-	print("Set version: ", pkg_vers)
 	config.description = pkg_desc
-	print("Set description: ", pkg_desc)
+	
+	# Пути к основным файлам
 	config.script_path = pkg_name + ".gd"
-	print("Set script_path: ", pkg_name + ".gd")
 	config.adapter_path = pkg_name + "_adapter.gd"
-	print("Set adapter_path: ", pkg_name + "_adapter.gd")
-	
-	# --- ИЗМЕНЕНИЕ: Устанавливаем путь к Core скрипту ---
 	config.core_path = "src/" + pkg_name + "_core.gd"
-	print("Set core_path: ", config.core_path)
-	# ----------------------------------------------------
 	
-	# --- ИЗМЕНЕНИЕ: Устанавливаем путь к SubAdapter скрипту ---
-	config.sub_adapter_path = "src/adapters/" + pkg_name + "_sub_adapter.gd"
-	print("Set sub_adapter_path: ", config.sub_adapter_path)
-	# ----------------------------------------------------
+	# ИЗМЕНЕНИЕ: Сразу добавляем путь к саб-адаптеру в массив
+	# Так как мы используем Array[String], это сохранится корректно без хаков
+	config.sub_adapters.append("src/adapters/" + pkg_name + "_sub_adapter.gd")
 	
-	config.dependencies = PackedStringArray(pkg_deps)
-	print("Set dependencies: ", PackedStringArray(pkg_deps))
+	# Зависимости
+	config.dependencies = []
+	for dep in pkg_deps:
+		config.dependencies.append(str(dep))
 	
-	print("PackageConfig resource ready: ", config)
 	return config
 
 func _get_type_index(value) -> int:
@@ -73,17 +63,17 @@ const PACKAGE_TEMPLATE = """extends Package # {name}
 
 const Core = preload("src/{name}_core.gd")
 const Adapter = preload("{name}_adapter.gd")
-const SubAdapter = preload("src/adapters/{name}_sub_adapter.gd")
-
 
 func _loaded() -> void:
 	var core = Core.new()
 	var adapter = Adapter.new()
-	var sub_adapter = SubAdapter.new()
 	
 	core.example_method()
 	adapter.say_hello()
-	sub_adapter.example_method()
+	
+	# Пример вызова саб-адаптера по ключу (имя файла без расширения)
+	if sub_adapters.has("{name}_sub_adapter"):
+		sub_adapters["{name}_sub_adapter"].example_method()
 	
 	emit_message("loaded successfully.")
 
@@ -150,112 +140,71 @@ func _on_create_src_script_pressed(option: Array):
 		var package_dir = parent_dir.get_base_dir()
 		var package_name = package_dir.get_file()
 		
-		var dir = DirAccess.open(parent_dir)
-		if dir.get_open_error() != OK:
-			var parent_path = parent_dir
-			dir = DirAccess.open(parent_path.get_base_dir())
-			if dir.get_open_error() == OK:
-				dir.make_dir(parent_path.get_file())
-				dir = DirAccess.open(parent_dir)
-		
 		var file = FileAccess.open(parent_dir.path_join(package_name + "_core.gd"), FileAccess.WRITE)
 		if FileAccess.get_open_error() == OK:
 			file.store_string(_new_package_src_script(package_name))
 			file.close()
-			print("Created src script: ", parent_dir.path_join(package_name + "_core.gd"))
+			get_editor_interface().get_resource_filesystem().scan()
 		else:
-			push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
-		
-		get_editor_interface().get_resource_filesystem().scan()
-	else:
-		push_error("[PackageBuilderPlugin] Not a src directory: ", parent_dir)
+			push_error("[PackageBuilder] failed to create core script")
 
 func _on_package_created(package_path: String, package_name: String, package_version: String, package_desc: String, package_deps: Array) -> void:
-	print("creating package: ", package_name)
-	print("at path: ", package_path)
-
 	var dir := DirAccess.open(package_path)
 	if dir.get_open_error() == OK:
 		dir.make_dir(package_name)
 
 	var path: String = package_path.path_join(package_name)
-	print("Received package_deps in _on_package_created: ", package_deps)
-	var config: PackageConfig = _new_package_config(package_name, package_version, package_desc, package_deps)
-	print("Config after _new_package_config call: ", config.to_dict())
 	
-	print("Config type: ", config.get_class())
-	print("Config name: ", config.name)
-	print("Config version: ", config.version)
-	print("Config description: ", config.description)
-	print("Config script_path: ", config.script_path)
-	print("Config adapter_path: ", config.adapter_path)
-	print("Config core_path: ", config.core_path)
-	print("Config dependencies: ", config.dependencies)
-
-	print("Attempting to save Resource to: ", path.path_join("package_config.tres"))
-	var save_error = ResourceSaver.save(config, path.path_join("package_config.tres"))
-	print("Save result: ", save_error)
+	# 1. Создаем конфиг
+	var config: PackageConfig = _new_package_config(package_name, package_version, package_desc, package_deps)
+	
+	# 2. Сохраняем конфиг стандартным способом (без хаков!)
+	var save_path = path.path_join("package_config.tres")
+	var save_error = ResourceSaver.save(config, save_path)
 	if save_error != OK:
-		push_error("[PackageBuilderPlugin] failed to create package config resource file, error code: " + str(save_error))
+		push_error("[PackageBuilder] Failed to save config: " + str(save_error))
 	else:
-		print("Created package config: ", path.path_join("package_config.tres"))
-
+		print("[PackageBuilder] Created config: ", save_path)
+	
+	# 3. Создаем остальные файлы
 	var file := FileAccess.open(path.path_join(package_name + ".gd"), FileAccess.WRITE)
-	if FileAccess.get_open_error() == OK:
+	if file:
 		file.store_string(_new_package_script(package_name, package_desc))
 		file.close()
-	else:
-		push_error("[PackageBuilderPlugin] failed to create package main script, open error: ", FileAccess.get_open_error())
 
 	file = FileAccess.open(path.path_join(package_name + "_adapter.gd"), FileAccess.WRITE)
-	if FileAccess.get_open_error() == OK:
+	if file:
 		file.store_string(_new_package_adapter_script(package_name))
 		file.close()
-	else:
-		push_error("[PackageBuilderPlugin] failed to create package adapter script, open error: ", FileAccess.get_open_error())
 
 	dir.make_dir(path.path_join("src"))
 	
-	var src_dir_new = DirAccess.open(path.path_join("src"))
-	if src_dir_new.get_open_error() != OK:
-		push_error("[PackageBuilderPlugin] failed to open src directory: ", path.path_join("src"))
-		return
-	
 	file = FileAccess.open(path.path_join("src").path_join(package_name + "_core.gd"), FileAccess.WRITE)
-	if FileAccess.get_open_error() == OK:
+	if file:
 		file.store_string(_new_package_src_script(package_name))
 		file.close()
-	else:
-		push_error("[PackageBuilderPlugin] failed to create package core script in src, open error: ", FileAccess.get_open_error())
 
-	# Создание папки adapters и файла SubAdapter
+	# Создание sub_adapters
 	var adapters_dir = DirAccess.open(path.path_join("src"))
-	if adapters_dir.get_open_error() != OK:
-		adapters_dir = DirAccess.open(path)
-		if adapters_dir.get_open_error() == OK:
-			adapters_dir.make_dir("src/adapters")
-		else:
-			push_error("[PackageBuilderPlugin] failed to create src directory for sub adapter: ", path.path_join("src"))
-	else:
+	if adapters_dir:
 		adapters_dir.make_dir("adapters")
-
-	var adapters_path = path.path_join("src/adapters")
-	var sub_adapter_file = FileAccess.open(adapters_path.path_join(package_name + "_sub_adapter.gd"), FileAccess.WRITE)
-	if FileAccess.get_open_error() == OK:
-		sub_adapter_file.store_string(_new_package_sub_adapter_script(package_name))
-		sub_adapter_file.close()
-		print("Created sub adapter script: ", adapters_path.path_join(package_name + "_sub_adapter.gd"))
-	else:
-		push_error("[PackageBuilderPlugin] failed to create package sub adapter script, open error: ", FileAccess.get_open_error())
+	
+	var sub_adapter_path = path.path_join("src/adapters").path_join(package_name + "_sub_adapter.gd")
+	file = FileAccess.open(sub_adapter_path, FileAccess.WRITE)
+	if file:
+		file.store_string(_new_package_sub_adapter_script(package_name))
+		file.close()
 
 	get_editor_interface().get_resource_filesystem().scan()
 	
+	# Валидация
 	var validation_result = GDPackageValidator.validate_package_complete(path)
-	if not validation_result.is_valid:
-		push_warning("Package validation failed for '" + package_name + "':")
-		for error in validation_result.errors:
-			push_error(error)
-	for warning in validation_result.warnings:
-		push_warning(warning)
 	if validation_result.is_valid:
-		print("Package validation passed for '" + package_name + "'")
+		print("[PackageBuilder] Package created successfully: " + package_name)
+	else:
+		push_warning("[PackageBuilder] Package created with warnings")
+	
+
+
+
+	
