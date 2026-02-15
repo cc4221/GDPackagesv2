@@ -9,4 +9,4 @@ version = "v1.0"
 script_path = "test.gd"
 adapter_path = "test_adapter.gd"
 core_path = "src/test_core.gd"
-dependencies = PackedStringArray()
+dependencies = []

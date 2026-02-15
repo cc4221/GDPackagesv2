@@ -391,37 +391,37 @@ static func load_package(directory: String, group: String = "", dependency_chain
 				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
 					adapter_instance.subscribe_to_events()
 	
-	# Загрузка SubAdapter (если он существует)
-	var sub_adapter_value = config.get("sub_adapter", "")
-	if sub_adapter_value and sub_adapter_value != "":
-		var sub_adapter_path: String = ""
-
-		if sub_adapter_value is String:
-			if sub_adapter_value.begins_with("uid://"):
-				var resource_path = sub_adapter_value
-				var resource = ResourceLoader.load(resource_path)
-				if resource and resource.resource_path:
-					sub_adapter_path = resource.resource_path
+	# Загрузка SubAdapters (если они есть)
+	var sub_adapters_config = config.get("sub_adapters", [])
+	if (sub_adapters_config is PackedStringArray or sub_adapters_config is Array) and not sub_adapters_config.is_empty():
+		for i in range(sub_adapters_config.size()):
+			var sub_path_value = sub_adapters_config[i]
+			if sub_path_value is String and not sub_path_value.is_empty():
+				var full_sub_path = _resolve_script_path(directory, sub_path_value)
+				if not full_sub_path.is_empty() and FileAccess.file_exists(full_sub_path):
+					var sub_script = load(full_sub_path)
+					if sub_script:
+						var sub_instance = sub_script.new()
+						if not "sub_adapters" in root:
+							root.sub_adapters = {}
+						
+						# Определяем ключ
+						var key: String
+						if i == 0:
+							key = "default"
+						else:
+							# Берём имя файла без расширения, например "tilde_manager_sub_adapter2"
+							key = full_sub_path.get_file().get_basename()
+						
+						root.sub_adapters[key] = sub_instance
+						sub_instance.set_meta("package_name", package_name)
+					else:
+						push_warning("Failed to load sub-adapter script: " + full_sub_path)
 				else:
-					push_warning("Could not load sub adapter resource by UID: " + sub_adapter_value + ", trying to find in directory: " + directory)
-					var dir_access = DirAccess.open(directory)
-					if dir_access:
-						dir_access.list_dir_begin()
-						var file_name = dir_access.get_next()
-						while file_name != "":
-							if not dir_access.current_is_dir() and file_name.ends_with("_sub_adapter.gd"):
-								sub_adapter_path = directory.path_join(file_name)
-								break
-							file_name = dir_access.get_next()
-			else:
-				sub_adapter_path = directory.path_join(sub_adapter_value)
-		
-		if sub_adapter_path != "":
-			var sub_adapter_script = load(sub_adapter_path)
-			if sub_adapter_script:
-				var sub_adapter_instance = sub_adapter_script.new()
-				if root.adapter:
-					root.adapter.sub_adapter = sub_adapter_instance
+					push_warning("Sub-adapter script not found: " + str(sub_path_value))
+
+
+
 
 	root._loaded()
 	
@@ -559,37 +559,33 @@ static func load_lazy_package(package_name: String, dependency_chain: Array[Stri
 				if ClassDB.class_exists("PackageEventBus") and adapter_instance.has_method("subscribe_to_events"):
 					adapter_instance.subscribe_to_events()
 
-	# Загрузка SubAdapter (если он существует)
-	var sub_adapter_value = config.get("sub_adapter", "")
-	if sub_adapter_value and sub_adapter_value != "":
-		var sub_adapter_path: String = ""
-
-		if sub_adapter_value is String:
-			if sub_adapter_value.begins_with("uid://"):
-				var resource_path = sub_adapter_value
-				var resource = ResourceLoader.load(resource_path)
-				if resource and resource.resource_path:
-					sub_adapter_path = resource.resource_path
-				else:
-					push_warning("Could not load sub adapter resource by UID: " + sub_adapter_value + ", trying to find in directory: " + directory)
-					var dir_access = DirAccess.open(directory)
-					if dir_access:
-						dir_access.list_dir_begin()
-						var file_name = dir_access.get_next()
-						while file_name != "":
-							if not dir_access.current_is_dir() and file_name.ends_with("_sub_adapter.gd"):
-								sub_adapter_path = directory.path_join(file_name)
-								break
-							file_name = dir_access.get_next()
-			else:
-				sub_adapter_path = directory.path_join(sub_adapter_value)
-		
-		if sub_adapter_path != "":
-			var sub_adapter_script = load(sub_adapter_path)
-			if sub_adapter_script:
-				var sub_adapter_instance = sub_adapter_script.new()
-				if root.adapter:
-					root.adapter.sub_adapter = sub_adapter_instance
+	# Загрузка SubAdapters (если они есть)
+	var sub_adapters_config = config.get("sub_adapters", [])
+	
+	# ИЗМЕНЕНИЕ: Проверка просто на Array или PackedStringArray
+	if sub_adapters_config is Array or sub_adapters_config is PackedStringArray:
+		if not sub_adapters_config.is_empty():
+			for i in range(sub_adapters_config.size()):
+				var sub_path_value = sub_adapters_config[i]
+				if sub_path_value is String and not sub_path_value.is_empty():
+					var full_sub_path = _resolve_script_path(directory, sub_path_value)
+					if not full_sub_path.is_empty() and FileAccess.file_exists(full_sub_path):
+						var sub_script = load(full_sub_path)
+						if sub_script:
+							var sub_instance = sub_script.new()
+							if not "sub_adapters" in root:
+								root.sub_adapters = {}
+							
+							# ИЗМЕНЕНИЕ: Ключ - имя файла без расширения
+							var key = full_sub_path.get_file().get_basename()
+							
+							root.sub_adapters[key] = sub_instance
+							sub_instance.set_meta("package_name", package_name)
+						else:
+							push_warning("Failed to load sub-adapter script: " + full_sub_path)
+					else:
+						# Не критично для lazy load, если файл еще не создан
+						pass
 
 	root._loaded()
 	
@@ -1401,3 +1397,16 @@ static func get_package_info_with_deps(package_name: String) -> Dictionary:
 				result.deps.append(str(dep))
 	
 	return result
+
+static func _resolve_script_path(directory: String, path_value: Variant) -> String:
+	if path_value is String:
+		if path_value.begins_with("uid://"):
+			var resource = ResourceLoader.load(path_value)
+			if resource and resource.resource_path:
+				return resource.resource_path
+			else:
+				push_warning("Could not load resource by UID: " + path_value)
+				return ""
+		else:
+			return directory.path_join(path_value)
+	return ""
