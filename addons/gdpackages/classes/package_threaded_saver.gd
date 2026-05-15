@@ -13,9 +13,9 @@ var _semaphore: Semaphore
 var _mutex: Mutex
 var _threads: Array[Thread] = []
 
-var _activeQueue: Dictionary = {}
-var _activeQueueKeys: Array = []
-var _idleQueue: Dictionary = {}
+var _activeQueue: Dictionary[String, Array] = {}
+var _activeQueueKeys: Array[String] = []
+var _idleQueue: Dictionary[String, Array] = {}
 
 var _totalResourcesAmount: int = 0
 var _completedResourcesAmount: int = 0
@@ -37,28 +37,28 @@ var _auto_start_on_ready_thread_amount: int = 0
 
 func is_idle() -> bool:
 	_mutex.lock()
-	var result = not _savingHasStarted
+	var result: bool = not _savingHasStarted
 	_mutex.unlock()
 	return result
 
 
 func get_current_threads_amount() -> int:
 	_mutex.lock()
-	var result = _currentThreadsAmount
+	var result: int = _currentThreadsAmount
 	_mutex.unlock()
 	return result
 
 
-func add(resources: Array) -> PackageThreadedSaver:
+func add(resources: Array[Array]) -> PackageThreadedSaver:
 	_mutex.lock()
 	
-	for params in resources:
+	for params: Array in resources:
+		if params.is_empty():
+			push_error("PackageThreadedSaver: empty parameter array will be ignored")
+			continue
+
 		if not (params[0] is Resource):
 			push_error("PackageThreadedSaver: invalid parameter value: \"%s\", should be Resource, will be ignored" % params[0])
-			continue
-		
-		if params.size() == 0:
-			push_error("PackageThreadedSaver: empty parameter array will be ignored")
 			continue
 		
 		var resource: Resource = params[0]
@@ -133,7 +133,7 @@ func start(verifyFilesAccess: bool = false, threadsAmount: int = -1) -> PackageT
 		else:
 			_clearDataAfterSave.call_deferred()
 		
-		call_deferred("emit_signal", "saveFinished", _savedPaths)
+		saveFinished.emit.call_deferred(_savedPaths)
 		_mutex.unlock()
 		return self
 	
@@ -142,7 +142,7 @@ func start(verifyFilesAccess: bool = false, threadsAmount: int = -1) -> PackageT
 		_verifyFilesAccess = verifyFilesAccess
 		_initThreadPool(threadsAmount)
 	
-	call_deferred("emit_signal", "saveStarted", _totalResourcesAmount)
+	saveStarted.emit.call_deferred(_totalResourcesAmount)
 	
 	for _i in range(_currentThreadsAmount):
 		_semaphore.post.call_deferred()
@@ -154,9 +154,9 @@ func start(verifyFilesAccess: bool = false, threadsAmount: int = -1) -> PackageT
 
 
 func _initThreadPool(threadsAmount: int) -> void:
-	var actualThreadsNeeded = min(threadsAmount, _totalResourcesAmount)
-	for i in range(actualThreadsNeeded):
-		var thread = Thread.new()
+	var actualThreadsNeeded: int = min(threadsAmount, _totalResourcesAmount)
+	for i: int in range(actualThreadsNeeded):
+		var thread: Thread = Thread.new()
 		_threads.append(thread)
 		thread.start(_saveThreadWorker)
 	_currentThreadsAmount = actualThreadsNeeded
@@ -183,7 +183,7 @@ func _saveThreadWorker() -> void:
 		
 		var resource: Resource = saveParams[0]
 		var path: String = saveParams[1]
-		var flags: int = saveParams[2] if saveParams.size() > 2 else 0
+		var flags: int = saveParams[2] if saveParams.size() > 2 else (0 as int)
 		
 		var error: Error = ResourceSaver.save(resource, path, flags)
 		
@@ -192,15 +192,13 @@ func _saveThreadWorker() -> void:
 		if error == OK:
 			_completedResourcesAmount += 1
 			_savedPaths.append(resource_path)
-			call_deferred(
-				"emit_signal",
-				"saveProgress",
+			saveProgress.emit.call_deferred(
 				_completedResourcesAmount,
 				_totalResourcesAmount
 			)
 		else:
 			_failedResourcesAmount += 1
-			call_deferred("emit_signal", "saveError", resource_path, error)
+			saveError.emit.call_deferred(resource_path, error)
 		
 		var isSaveComplete: bool = _completedResourcesAmount + _failedResourcesAmount >= _totalResourcesAmount
 		
@@ -208,7 +206,7 @@ func _saveThreadWorker() -> void:
 			if _verifyFilesAccess:
 				_verifyFileReadinessAccess.call_deferred()
 			else:
-				call_deferred("emit_signal", "saveFinished", _savedPaths)
+				saveFinished.emit.call_deferred(_savedPaths)
 				_awaiting_for_cleaning = true
 				_on_save_finished.call_deferred()
 		else:
@@ -229,7 +227,7 @@ func _verifyFileReadinessAccess() -> void:
 	_mutex.unlock()
 	
 	if not _verifyFilesAccess:
-		call_deferred("emit_signal", "saveFinished", savedPathsCopy)
+		saveFinished.emit.call_deferred(savedPathsCopy)
 		_stopSaveThreads.call_deferred()
 		return
 	
@@ -239,11 +237,11 @@ func _verifyFileReadinessAccess() -> void:
 		if file:
 			file.close()
 		else:
-			call_deferred("emit_signal", "saveError", path, ERR_FILE_CANT_READ)
+			saveError.emit.call_deferred(path, ERR_FILE_CANT_READ)
 			_stopSaveThreads.call_deferred()
 			return
 	
-	call_deferred("emit_signal", "saveFinished", savedPathsCopy)
+	saveFinished.emit.call_deferred(savedPathsCopy)
 	_stopSaveThreads.call_deferred()
 
 
@@ -256,10 +254,10 @@ func _stopSaveThreads() -> void:
 	_isStopping = true
 	_mutex.unlock()
 	
-	for _i in range(_currentThreadsAmount):
+	for _i: int in range(_currentThreadsAmount):
 		_semaphore.post()
 	
-	for thread in _threads:
+	for thread: Thread in _threads:
 		if thread.is_started():
 			thread.wait_to_finish()
 	
@@ -298,16 +296,16 @@ func _notification(what: int) -> void:
 		_mutex.lock()
 		_isStopping = true
 		
-		for _i in range(_currentThreadsAmount):
+		for _i: int in range(_currentThreadsAmount):
 			_semaphore.post()
 		
 		_mutex.unlock()
 		
-		for thread in _threads:
+		for thread: Thread in _threads:
 			if thread.is_started():
 				thread.wait_to_finish()
 
 
-func _exit_tree():
+func _exit_tree() -> void:
 	if _savingHasStarted:
 		_stopSaveThreads()

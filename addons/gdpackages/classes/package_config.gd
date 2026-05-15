@@ -39,14 +39,14 @@ func from_dict(dict: Dictionary) -> void:
 	script_path = dict.get("script", "")
 	adapter_path = dict.get("adapter", "")
 	core_path = dict.get("core", "")
-	
+
 	# Конвертация для безопасности типов
-	var sub_adapters_array = dict.get("sub_adapters", [])
+	var sub_adapters_array: Array = dict.get("sub_adapters", [])
 	sub_adapters = []
-	for item in sub_adapters_array:
+	for item: Variant in sub_adapters_array:
 		sub_adapters.append(str(item))
-		
-	var deps_array = dict.get("dependencies", [])
+
+	var deps_array: Array = dict.get("dependencies", [])
 	dependencies = []
-	for item in deps_array:
+	for item: Variant in deps_array:
 		dependencies.append(str(item))

@@ -1,12 +1,18 @@
 extends Package # test
 
-const Core = preload("src/test_core.gd")
-
+const Core: Script = preload("src/test_core.gd")
+const TestAdapterClass: Script = preload("test_adapter.gd")
 
 func _loaded() -> void:
-	var core = Core.new()
-	var result = core.add(42, 42)
-	adapter.send_result(result)
+	var core_instance: TestCore = Core.new()
+	var result: int = core_instance.add(42, 42)
+
+	# adapter - это PackageAdapter базово, у которого нет метода send_result.
+	# Необходимо кастовать к конкретному классу, чтобы не было ошибки статической типизации
+	var typed_adapter: TestAdapterClass = adapter as TestAdapterClass
+	if typed_adapter:
+		typed_adapter.send_result(result)
+
 	emit_message("loaded successfully.")
 
 func _unloaded() -> void:

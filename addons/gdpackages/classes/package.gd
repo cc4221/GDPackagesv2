@@ -1,15 +1,13 @@
 @abstract
 class_name Package extends Node
 
-const PackageConfig = preload("res://addons/gdpackages/classes/package_config.gd")
+const PackageConfigGlobal: Script = preload("res://addons/gdpackages/classes/package_config.gd")
 
-var PackageEventBus = preload("res://addons/gdpackages/classes/package_event_bus.gd")
+var PackageEventBusGlobal: Script = preload("res://addons/gdpackages/classes/package_event_bus.gd")
 
-var PackageThreadedResourceManager = preload("res://addons/gdpackages/classes/package_threaded_resource_manager.gd")
+var PackageThreadedResourceManagerGlobal: Script = preload("res://addons/gdpackages/classes/package_threaded_resource_manager.gd")
 
-signal ready_complete
-
-@export var _config: Dictionary
+@export var _config: Dictionary = {}
 
 var adapter: PackageAdapter = null
 
@@ -49,20 +47,20 @@ func config_set_dependencies(dependencies: PackedStringArray) -> void:
 func emit_message(message: String, identity: String = config_get_name()) -> void:
 	PackageManager.emit_message(identity, message)
 func emit_group_message(message: String, identity: String = config_get_name()) -> void:
-	var package_name = config_get_name()
+	var package_name: String = config_get_name()
 	PackageManager.emit_group_message_from_package(package_name, identity, message)
 
 func emit_warning(message: String, identity: String = config_get_name()) -> void:
 	PackageManager.emit_warning(identity, message)
 
 func emit_group_warning(message: String, identity: String = config_get_name()) -> void:
-	var package_name = config_get_name()
+	var package_name: String = config_get_name()
 	PackageManager.emit_group_warning_from_package(package_name, identity, message)
 
 func emit_error(message: String, identity: String = config_get_name()) -> void:
 	PackageManager.emit_error(identity, message)
 func emit_group_error(message: String, identity: String = config_get_name()) -> void:
-	var package_name = config_get_name()
+	var package_name: String = config_get_name()
 	PackageManager.emit_group_error_from_package(package_name, identity, message)
 
 func emit_group_mask_message(message: String, mask: int, identity: String = config_get_name()) -> void:
@@ -71,18 +69,18 @@ func log_entry(identity: String, message: String, stack: Array[Dictionary] = [])
 	PackageLogger.log_entry(PackageLogger.EntryType.Message, PackageLogger.LogLevel.INFO, identity, message, stack)
 
 
-func emit_event(event_name: String, data: Variant = null) -> void:
-	PackageEventBus.emit(event_name, data, config_get_name())
+func emit_event(event_name: String, data: Dictionary = {}) -> void:
+	PackageEventBusGlobal.emit(event_name, data, config_get_name())
 
 func subscribe_to_event(event_name: String, callback: Callable,
 						filter: Callable = Callable()) -> void:
-	PackageEventBus.subscribe(event_name, callback, config_get_name(), filter)
+	PackageEventBusGlobal.subscribe(event_name, callback, config_get_name(), filter)
 
 func unsubscribe_from_event(event_name: String, callback: Callable) -> void:
-	PackageEventBus.unsubscribe(event_name, callback)
+	PackageEventBusGlobal.unsubscribe(event_name, callback)
 
 func get_cached_events(event_name: String, count: int = 10) -> Array:
-	return PackageEventBus.get_cached_events(event_name, count)
+	return PackageEventBusGlobal.get_cached_events(event_name, count)
 
 func get_package_adapter(target_package_name: String) -> PackageAdapter:
 	return PackageManager.get_adapter(target_package_name)
@@ -98,75 +96,75 @@ func register_package(directory: String, group: String = "") -> bool:
 
 
 func load_resource_async(key: String, path: String, type_hint: String = "", cache_mode: int = 1) -> void:
-	PackageThreadedResourceManager.load_resource(key, path, type_hint, cache_mode)
+	PackageThreadedResourceManagerGlobal.load_resource(key, path, type_hint, cache_mode)
 
 func load_resources_async(resources: Array[Array]) -> void:
-	PackageThreadedResourceManager.load_resources(resources)
+	PackageThreadedResourceManagerGlobal.load_resources(resources)
 
 func load_resources_group_async(group_name: String, resources: Array[Array], ignore_in_finished: bool = false) -> void:
-	PackageThreadedResourceManager.load_resources_group(group_name, resources, ignore_in_finished)
+	PackageThreadedResourceManagerGlobal.load_resources_group(group_name, resources, ignore_in_finished)
 
 func queue_load_resources(resources: Array[Array]) -> void:
-	PackageThreadedResourceManager.queue_load_resources(resources)
+	PackageThreadedResourceManagerGlobal.queue_load_resources(resources)
 
 func start_loading(threads_amount: int = -1) -> void:
-	PackageThreadedResourceManager.start_loading(threads_amount)
+	PackageThreadedResourceManagerGlobal.start_loading(threads_amount)
 
 func is_loader_idle() -> bool:
-	return PackageThreadedResourceManager.is_loader_idle()
+	return PackageThreadedResourceManagerGlobal.is_loader_idle()
 
 func get_loader_threads_count() -> int:
-	return PackageThreadedResourceManager.get_loader_threads_count()
+	return PackageThreadedResourceManagerGlobal.get_loader_threads_count()
 
 func connect_load_finished(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_load_finished(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_load_finished(callable, flags)
 
 func connect_load_progress(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_load_progress(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_load_progress(callable, flags)
 
 func connect_load_group(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_load_group(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_load_group(callable, flags)
 
 func connect_load_error(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_load_error(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_load_error(callable, flags)
 
 func connect_load_started(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_load_started(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_load_started(callable, flags)
 
 func connect_loader_idle(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_loader_idle(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_loader_idle(callable, flags)
 
 
 
 func save_resource_async(resource: Resource, path: String = "", flags: int = 0) -> void:
-	PackageThreadedResourceManager.save_resource(resource, path, flags)
+	PackageThreadedResourceManagerGlobal.save_resource(resource, path, flags)
 
 func save_resources_async(resources: Array[Array]) -> void:
-	PackageThreadedResourceManager.save_resources(resources)
+	PackageThreadedResourceManagerGlobal.save_resources(resources)
 
 func queue_save_resources(resources: Array[Array]) -> void:
-	PackageThreadedResourceManager.queue_save_resources(resources)
+	PackageThreadedResourceManagerGlobal.queue_save_resources(resources)
 
 func start_saving(verify_files_access: bool = false, threads_amount: int = -1) -> void:
-	PackageThreadedResourceManager.start_saving(verify_files_access, threads_amount)
+	PackageThreadedResourceManagerGlobal.start_saving(verify_files_access, threads_amount)
 
 func is_saver_idle() -> bool:
-	return PackageThreadedResourceManager.is_saver_idle()
+	return PackageThreadedResourceManagerGlobal.is_saver_idle()
 
 func get_saver_threads_count() -> int:
-	return PackageThreadedResourceManager.get_saver_threads_count()
+	return PackageThreadedResourceManagerGlobal.get_saver_threads_count()
 
 func connect_save_finished(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_save_finished(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_save_finished(callable, flags)
 
 func connect_save_progress(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_save_progress(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_save_progress(callable, flags)
 
 func connect_save_error(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_save_error(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_save_error(callable, flags)
 
 func connect_save_started(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_save_started(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_save_started(callable, flags)
 
 func connect_saver_idle(callable: Callable, flags: int = 0) -> int:
-	return PackageThreadedResourceManager.connect_saver_idle(callable, flags)
+	return PackageThreadedResourceManagerGlobal.connect_saver_idle(callable, flags)

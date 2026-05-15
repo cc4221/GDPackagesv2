@@ -1,20 +1,24 @@
 extends Package # test_2
 
-const Core = preload("src/test_2_core.gd")
-
+const Core: Script = preload("src/test_2_core.gd")
+const Test2AdapterClass: Script = preload("test_2_adapter.gd")
 
 func _loaded() -> void:
 	emit_message("loaded successfully.")
-	# Получаем адаптер test для получения значения
-	var test_adapter = PackageManager.get_adapter("test")
-	if test_adapter:
-		var value = test_adapter.get_result()
+
+	# Получаем адаптер как Variant. Если бы мы типизировали как PackageAdapter,
+	# статический анализатор выдал бы ошибку на get_result(), так как у базового класса нет этого метода.
+	var test_adapter: Variant = PackageManager.get_adapter("test")
+	if test_adapter != null:
+		var value: int = test_adapter.get_result()
 		if value != 0:
 			# Передаём значение в наш core для бизнес-логики
-			var core = Core.new()
-			var result = core.multiply(value)
-			# Выводим результат через наш адаптер
-			adapter.print_result(result)
+			var core_instance: Test2Core = Core.new()
+			var result: int = core_instance.multiply(value)
+
+			# print_result - это статический метод!
+			# Вызов статического метода от инстанса 'adapter' в Godot 4 некорректен.
+			Test2AdapterClass.print_result(result)
 
 func _unloaded() -> void:
 	emit_message("unloaded successfully.")

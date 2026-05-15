@@ -44,14 +44,14 @@ func _init() -> void:
 
 func is_idle() -> bool:
 	_mutex.lock()
-	var result = not _loadingHasStarted
+	var result: bool = not _loadingHasStarted
 	_mutex.unlock()
 	return result
 
 
 func get_current_threads_amount() -> int:
 	_mutex.lock()
-	var result = _currentThreadsAmount
+	var result: int = _currentThreadsAmount
 	_mutex.unlock()
 	return result
 
@@ -59,7 +59,7 @@ func get_current_threads_amount() -> int:
 func add_group(group_name: String, resources: Array, ignore_in_finished: bool = false) -> PackageThreadedLoader:
 	_mutex.lock()
 	
-	for params in resources:
+	for params: Array in resources:
 		if _areParamsValid(params):
 			_idleQueue.append(params)
 			
@@ -85,7 +85,7 @@ func add_group(group_name: String, resources: Array, ignore_in_finished: bool = 
 func add(resources: Array) -> PackageThreadedLoader:
 	_mutex.lock()
 	
-	for params in resources:
+	for params: Array in resources:
 		if _areParamsValid(params):
 			_idleQueue.append(params)
 			var resource_path: String = params[1]
@@ -113,7 +113,7 @@ func start(threadsAmount: int = -1) -> PackageThreadedLoader:
 	if _awaiting_for_cleaning:
 		_awaiting_for_cleaning = false
 
-	var idle_size = _idleQueue.size()
+	var idle_size: int = _idleQueue.size()
 	_activeQueue.append_array(_idleQueue)
 	_totalResourcesAmount += idle_size
 	_idleQueue.clear()
@@ -128,7 +128,7 @@ func start(threadsAmount: int = -1) -> PackageThreadedLoader:
 		else:
 			_clearDataAfterLoad.call_deferred()
 		
-		call_deferred("emit_signal", "loadFinished", _loadedFiles)
+		loadFinished.emit.call_deferred(_loadedFiles)
 		_mutex.unlock()
 		return self
 
@@ -136,7 +136,7 @@ func start(threadsAmount: int = -1) -> PackageThreadedLoader:
 		_loadingHasStarted = true
 		_initThreadPool(threadsAmount)
 	
-	call_deferred("emit_signal", "loadStarted", _totalResourcesAmount)
+	loadStarted.emit.call_deferred(_totalResourcesAmount)
 
 	for _i in range(_currentThreadsAmount):
 		_semaphore.post.call_deferred()
@@ -148,9 +148,9 @@ func start(threadsAmount: int = -1) -> PackageThreadedLoader:
 
 
 func _initThreadPool(threadsAmount: int) -> void:
-	var actualThreadsNeeded = min(threadsAmount, _totalResourcesAmount)
+	var actualThreadsNeeded: int = mini(threadsAmount, _totalResourcesAmount)
 	for i in range(actualThreadsNeeded):
-		var thread = Thread.new()
+		var thread := Thread.new()
 		_threads.append(thread)
 		thread.start(_loadThreadWorker)
 	_currentThreadsAmount = actualThreadsNeeded
@@ -173,7 +173,7 @@ func _loadThreadWorker() -> void:
 		
 		_mutex.unlock()
 
-		var resource_key: String = loadItem[0]
+		var _resource_key: String = loadItem[0]
 		var resource_path: String = loadItem[1]
 		var loadParams: Array = loadItem.slice(1)
 
@@ -185,7 +185,7 @@ func _loadThreadWorker() -> void:
 			_completedResourcesAmount += 1
 
 			if _resourcePathToGroupMap.has(resource_path):
-				var group_key = _resourcePathToGroupMap[resource_path]
+				var group_key: String = _resourcePathToGroupMap[resource_path]
 				if _groups.has(group_key):
 					var group: Dictionary = _groups[group_key]
 					group.loaded[_resourcePathToKeyMap[resource_path]] = resource
@@ -195,9 +195,7 @@ func _loadThreadWorker() -> void:
 						_loadedFiles[_resourcePathToKeyMap[resource_path]] = resource
 					
 					if group.finished == group.total:
-						call_deferred(
-							"emit_signal",
-							"loadGroup",
+						loadGroup.emit.call_deferred(
 							group_key,
 							group.loaded,
 							group.failed
@@ -206,27 +204,25 @@ func _loadThreadWorker() -> void:
 			else:
 				_loadedFiles[_resourcePathToKeyMap[resource_path]] = resource
 			
-			call_deferred(
-				"emit_signal",
-				"loadProgress",
+			loadProgress.emit.call_deferred(
 				_completedResourcesAmount,
 				_totalResourcesAmount
 			)
 		else:
 			if _resourcePathToGroupMap.has(resource_path):
-				var group_key = _resourcePathToGroupMap[resource_path]
+				var group_key: String = _resourcePathToGroupMap[resource_path]
 				if _groups.has(group_key):
 					var group: Dictionary = _groups[group_key]
 					group.failed[_resourcePathToKeyMap[resource_path]] = resource_path
 					group.finished += 1
 			
 			_failedResourcesAmount += 1
-			call_deferred("emit_signal", "loadError", resource_path)
+			loadError.emit.call_deferred(resource_path)
 		
 		var isLoadComplete: bool = _completedResourcesAmount + _failedResourcesAmount >= _totalResourcesAmount
 		
 		if isLoadComplete:
-			call_deferred("emit_signal", "loadFinished", _loadedFiles)
+			loadFinished.emit.call_deferred(_loadedFiles)
 			_awaiting_for_cleaning = true
 			_on_load_finished.call_deferred()
 		else:
@@ -264,6 +260,7 @@ func _clearDataAfterLoad() -> void:
 	_mutex.lock()
 
 	_activeQueue.clear()
+	_loadedFiles.clear()
 	_threads.clear()
 	_totalResourcesAmount = 0
 	_completedResourcesAmount = 0
@@ -312,7 +309,7 @@ func _keyExist(key: String) -> bool:
 	if key.strip_edges() == "":
 		return false
 
-	for path in _resourcePathToKeyMap:
+	for path: String in _resourcePathToKeyMap:
 		if _resourcePathToKeyMap[path] == key:
 			return true
 
@@ -320,7 +317,7 @@ func _keyExist(key: String) -> bool:
 
 
 func _getResourceKey(params: Array) -> String:
-	var resource_key = params[0]
+	var resource_key: String = params[0]
 	if resource_key.strip_edges() == "":
 		resource_key = params[1]
 	
@@ -342,6 +339,6 @@ func _notification(what: int) -> void:
 				thread.wait_to_finish()
 
 
-func _exit_tree():
+func _exit_tree() -> void:
 	if _loadingHasStarted:
 		_stopLoadThreads()

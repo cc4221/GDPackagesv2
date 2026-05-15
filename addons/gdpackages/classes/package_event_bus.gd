@@ -16,7 +16,7 @@ static var _name_to_id: Dictionary[StringName, int] = {}
 static var _id_to_name: Dictionary[int, StringName] = {}
 static var _next_event_id: int = 1
 
-static var _event_cache: Dictionary[StringName, Array] = {}
+static var _event_cache: Dictionary = {}
 
 static var max_cache_size: int = 50
 
@@ -34,18 +34,18 @@ static var _max_flush_items_per_tick: int = 1024
 
 class EventRunner:
 	extends Node
-	func _process(delta: float) -> void:
+	func _process(_delta: float) -> void:
 		PackageEventBus._flush_buffer()
 
 static func _ensure_runner() -> void:
 	if _runner == null:
 		if Engine.is_editor_hint():
 			return
-		var r = EventRunner.new()
+		var r: Node = EventRunner.new()
 		_runner = r
-		var ml = Engine.get_main_loop()
+		var ml: MainLoop = Engine.get_main_loop()
 		if ml and ml is SceneTree:
-			var root = ml.get_root()
+			var root: Node = ml.get_root()
 			if root:
 				root.add_child(r)
 
@@ -53,7 +53,7 @@ static func _ensure_runner() -> void:
 static func _get_event_id(event_name: StringName) -> int:
 	if _name_to_id.has(event_name):
 		return _name_to_id[event_name]
-	var id = _next_event_id
+	var id: int = _next_event_id
 	_next_event_id += 1
 	_name_to_id[event_name] = id
 	_id_to_name[id] = event_name
@@ -63,10 +63,10 @@ static func _get_event_id(event_name: StringName) -> int:
 
 static func subscribe(event_name: StringName, callback: Callable, package_name: String = "",
 					  filter: Callable = Callable()) -> String:
-	var id = _get_event_id(event_name)
+	var id: int = _get_event_id(event_name)
 	if not _subscribers.has(id):
 		_subscribers[id] = []
-	var sub = EventSubscription.new(callback, package_name, filter)
+	var sub: EventSubscription = EventSubscription.new(callback, package_name, filter)
 	_subscribers[id].append(sub)
 	return str(id) + "::" + str(_subscribers[id].size() - 1)
 
@@ -74,13 +74,14 @@ static func subscribe(event_name: StringName, callback: Callable, package_name: 
 static func unsubscribe(event_name: StringName, callback: Callable) -> void:
 	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id[event_name]
+	var id: int = _name_to_id[event_name]
 	if not _subscribers.has(id):
 		return
-	var subs = _subscribers[id]
-	var subs_count = subs.size()
+	var subs: Array = _subscribers[id]
+	var subs_count: int = subs.size()
 	for i in range(subs_count - 1, -1, -1):
-		if subs[i].callback == callback:
+		var sub: EventSubscription = subs[i]
+		if sub.callback == callback:
 			subs.remove_at(i)
 			break
 	if subs.is_empty():
@@ -89,11 +90,11 @@ static func unsubscribe(event_name: StringName, callback: Callable) -> void:
 
 static func unsubscribe_all(event_name: StringName) -> void:
 	if _name_to_id.has(event_name):
-		var id = _name_to_id[event_name]
+		var id: int = _name_to_id[event_name]
 		_subscribers.erase(id)
 
 
-static func emit(event_name: StringName, data: Variant = null, source: String = "") -> void:
+static func emit(event_name: StringName, data: Dictionary = {}, source: String = "") -> void:
 	if track_stats:
 		if not _stats.has(event_name):
 			_stats[event_name] = {"count": 0, "last_emitted": 0.0}
@@ -114,7 +115,7 @@ static func emit(event_name: StringName, data: Variant = null, source: String = 
 	
 	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id[event_name]
+	var id: int = _name_to_id[event_name]
 	if not _subscribers.has(id):
 		return
 
@@ -123,30 +124,30 @@ static func emit(event_name: StringName, data: Variant = null, source: String = 
 		_ensure_runner()
 		return
 
-	var subs = _subscribers[id]
-	var subs_count = subs.size()
+	var subs: Array = _subscribers[id]
+	var subs_count: int = subs.size()
 	if subs_count > 0:
 		for i in range(subs_count):
-			var subscription = subs[i]
+			var subscription: EventSubscription = subs[i]
 			if subscription.filter.is_valid():
 				if not subscription.filter.call(data):
 					continue
 			subscription.callback.call(data)
 
 
-static func emit_to_package(event_name: StringName, package_name: String, data: Variant = null,
-						   source: String = "") -> void:
+static func emit_to_package(event_name: StringName, package_name: String, data: Dictionary = {},
+						   _source: String = "") -> void:
 	if not _name_to_id.has(event_name):
 		return
-	var id = _name_to_id[event_name]
+	var id: int = _name_to_id[event_name]
 	if not _subscribers.has(id):
 		return
-	
-	var subs = _subscribers[id]
-	var subs_count = subs.size()
+
+	var subs: Array = _subscribers[id]
+	var subs_count: int = subs.size()
 	if subs_count > 0:
 		for i in range(subs_count):
-			var subscription = subs[i]
+			var subscription: EventSubscription = subs[i]
 			if subscription.package_name == package_name:
 				if subscription.filter.is_valid():
 					if not subscription.filter.call(data):
@@ -157,8 +158,8 @@ static func emit_to_package(event_name: StringName, package_name: String, data: 
 static func get_cached_events(event_name: StringName, count: int = 10) -> Array:
 	if not _event_cache.has(event_name):
 		return []
-	var cache = _event_cache[event_name]
-	var start = max(0, cache.size() - count)
+	var cache: Array = _event_cache[event_name]
+	var start: int = max(0, cache.size() - count)
 	return cache.slice(start)
 
 
@@ -188,14 +189,14 @@ static func clear_stats() -> void:
 static func has_subscribers(event_name: StringName) -> bool:
 	if not _name_to_id.has(event_name):
 		return false
-	var id = _name_to_id[event_name]
+	var id: int = _name_to_id[event_name]
 	return _subscribers.has(id) and not _subscribers[id].is_empty()
 
 
 static func get_subscriber_count(event_name: StringName) -> int:
 	if not _name_to_id.has(event_name):
 		return 0
-	var id = _name_to_id[event_name]
+	var id: int = _name_to_id[event_name]
 	if not _subscribers.has(id):
 		return 0
 	return _subscribers[id].size()
@@ -203,8 +204,8 @@ static func get_subscriber_count(event_name: StringName) -> int:
 
 static func get_registered_events() -> PackedStringArray:
 	var result: PackedStringArray = PackedStringArray()
-	for id in _subscribers.keys():
-		var name = _id_to_name.get(id, "")
+	for id: int in _subscribers.keys():
+		var name: StringName = _id_to_name.get(id, "")
 		if name != "":
 			result.append(str(name))
 	return result
@@ -212,8 +213,8 @@ static func get_registered_events() -> PackedStringArray:
 
 static func get_registered_events_with_counts() -> Dictionary:
 	var result: Dictionary = {}
-	for id in _subscribers.keys():
-		var name = _id_to_name.get(id, "")
+	for id: int in _subscribers.keys():
+		var name: StringName = _id_to_name.get(id, "")
 		if name != "":
 			result[str(name)] = get_subscriber_count(name)
 	return result
@@ -234,18 +235,18 @@ static func _flush_buffer() -> void:
 	if _flush_in_progress:
 		return
 	_flush_in_progress = true
-	var processed = 0
+	var processed: int = 0
 	while _buffer.size() > 0 and processed < _max_flush_items_per_tick:
-		var item = _buffer.pop_front()
+		var item: Dictionary = _buffer.pop_front()
 		processed += 1
-		var id = item.get("id")
-		var data = item.get("data")
+		var id: int = item.get("id")
+		var data: Dictionary = item.get("data")
 		if _subscribers.has(id):
-			var subs = _subscribers[id]
-			var subs_count = subs.size()
+			var subs: Array = _subscribers[id]
+			var subs_count: int = subs.size()
 			if subs_count > 0:
 				for i in range(subs_count):
-					var subscription = subs[i]
+					var subscription: EventSubscription = subs[i]
 					if subscription.filter.is_valid():
 						if not subscription.filter.call(data):
 							continue

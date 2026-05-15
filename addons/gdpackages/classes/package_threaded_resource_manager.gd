@@ -28,9 +28,8 @@ var _thread_pool_enabled: bool = true
 	"cache_size_limit": 100
 }
 
-var _resource_cache: Dictionary = {}
+var _resource_cache: Dictionary[String, Resource] = {}
 var _cache_access_order: Array[String] = []
-var _cache_size_limit: int = 100
 
 func _cache_resource(key: String, resource: Resource) -> void:
 	if not performance_config.get("cache_resources", true):
@@ -42,8 +41,9 @@ func _cache_resource(key: String, resource: Resource) -> void:
 	_resource_cache[key] = resource
 	_cache_access_order.append(key)
 
-	if _cache_access_order.size() > performance_config.get("cache_size_limit", 100):
-		var oldest_key = _cache_access_order[0]
+	var limit: int = performance_config.get("cache_size_limit", 100)
+	if _cache_access_order.size() > limit:
+		var oldest_key: String = _cache_access_order[0]
 		_resource_cache.erase(oldest_key)
 		_cache_access_order.remove_at(0)
 
@@ -86,10 +86,12 @@ func _init() -> void:
 
 static func get_instance() -> PackageThreadedResourceManager:
 	if _instance == null:
-		var manager = PackageThreadedResourceManager.new()
-		var root = Engine.get_main_loop().get_root()
-		if root:
-			root.call_deferred("add_child", manager)
+		var manager: PackageThreadedResourceManager = PackageThreadedResourceManager.new()
+		var main_loop: MainLoop = Engine.get_main_loop()
+		if main_loop and main_loop is SceneTree:
+			var root: Window = (main_loop as SceneTree).get_root()
+			if root:
+				root.call_deferred("add_child", manager)
 
 	return _instance
 
@@ -105,9 +107,9 @@ static func set_ignore_warnings(value: bool) -> void:
 	PackageThreadedSaver.ignoreWarnings = value
 
 static func load_resource(key: String, path: String, type_hint: String = "", cache_mode: int = 1) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 
-	var cached_resource = manager._get_cached_resource(key)
+	var cached_resource: Resource = manager._get_cached_resource(key)
 	if cached_resource != null:
 		manager.loader._loadedFiles[key] = cached_resource
 		return manager
@@ -116,10 +118,10 @@ static func load_resource(key: String, path: String, type_hint: String = "", cac
 	return manager
 
 static func load_resource_simple(path: String, type_hint: String = "", cache_mode: int = 1) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
-	var key = path.get_file()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
+	var key: String = path.get_file()
 
-	var cached_resource = manager._get_cached_resource(key)
+	var cached_resource: Resource = manager._get_cached_resource(key)
 	if cached_resource != null:
 		manager.loader._loadedFiles[key] = cached_resource
 		return manager
@@ -127,13 +129,13 @@ static func load_resource_simple(path: String, type_hint: String = "", cache_mod
 	manager.loader.add([["", path, type_hint, cache_mode]]).start()
 	return manager
 
-static func load_resources(resources: Array) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func load_resources(resources: Array[Array]) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 
-	var resources_to_load = []
-	for resource_data in resources:
-		var key = resource_data[0] if resource_data[0] != "" else resource_data[1].get_file()
-		var cached_resource = manager._get_cached_resource(key)
+	var resources_to_load: Array[Array] = []
+	for resource_data: Array in resources:
+		var key: String = resource_data[0] if (resource_data[0] as String) != "" else (resource_data[1] as String).get_file()
+		var cached_resource: Resource = manager._get_cached_resource(key)
 		if cached_resource != null:
 			manager.loader._loadedFiles[key] = cached_resource
 		else:
@@ -144,25 +146,25 @@ static func load_resources(resources: Array) -> PackageThreadedResourceManager:
 	
 	return manager
 
-static func load_resources_group(group_name: String, resources: Array, ignore_in_finished: bool = false) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func load_resources_group(group_name: String, resources: Array[Array], ignore_in_finished: bool = false) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.loader.add_group(group_name, resources, ignore_in_finished).start()
 	return manager
 
-static func queue_load_resources(resources: Array) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func queue_load_resources(resources: Array[Array]) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.loader.add(resources)
 	return manager
 
-static func queue_load_group(group_name: String, resources: Array, ignore_in_finished: bool = false) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func queue_load_group(group_name: String, resources: Array[Array], ignore_in_finished: bool = false) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.loader.add_group(group_name, resources, ignore_in_finished)
 	return manager
 
 static func start_loading(threads_amount: int = -1) -> PackageThreadedResourceManager:
 	if threads_amount == -1:
 		threads_amount = max(1, OS.get_processor_count() - 1)
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.loader.start(threads_amount)
 	return manager
 
@@ -191,34 +193,34 @@ static func connect_loader_idle(callable: Callable, flags: int = 0) -> int:
 	return _get_cached_instance().loader.becameIdle.connect(callable, flags)
 
 static func save_resource(resource: Resource, path: String = "", flags: int = 0) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	if path.is_empty():
 		path = resource.resource_path
 	manager.saver.add([[resource, path, flags]]).start()
 	return manager
 
 static func save_resource_simple(resource: Resource, flags: int = 0) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	if resource.resource_path.is_empty():
 		push_error("PackageThreadedResourceManager: resource_path пуст, используйте save_resource() с явным путем")
 		return manager
 	manager.saver.add([[resource, "", flags]]).start()
 	return manager
 
-static func save_resources(resources: Array) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func save_resources(resources: Array[Array]) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.saver.add(resources).start()
 	return manager
 
-static func queue_save_resources(resources: Array) -> PackageThreadedResourceManager:
-	var manager = _get_cached_instance()
+static func queue_save_resources(resources: Array[Array]) -> PackageThreadedResourceManager:
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.saver.add(resources)
 	return manager
 
 static func start_saving(verify_files_access: bool = false, threads_amount: int = -1) -> PackageThreadedResourceManager:
 	if threads_amount == -1:
 		threads_amount = max(1, OS.get_processor_count() - 1)
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	manager.saver.start(verify_files_access, threads_amount)
 	return manager
 
@@ -244,7 +246,7 @@ static func connect_saver_idle(callable: Callable, flags: int = 0) -> int:
 	return _get_cached_instance().saver.becameIdle.connect(callable, flags)
 
 static func connect_all_finished(callable: Callable, flags: int = 0) -> Array[int]:
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	var ids: Array[int] = []
 	ids.append(manager.loader.loadFinished.connect(callable, flags))
 	ids.append(manager.saver.saveFinished.connect(callable, flags))
@@ -261,17 +263,17 @@ static func await_save_finished() -> Signal:
 	return _get_cached_instance().saver.saveFinished
 
 static func get_loaded_resource(key: String) -> Resource:
-	var manager = _get_cached_instance()
+	var manager: PackageThreadedResourceManager = _get_cached_instance()
 	if manager.loader._loadedFiles.has(key):
 		return manager.loader._loadedFiles[key]
 
 	return manager._get_cached_resource(key)
 
-static func get_all_loaded_resources() -> Dictionary:
-	var all_resources = _get_cached_instance().loader._loadedFiles.duplicate()
+static func get_all_loaded_resources() -> Dictionary[String, Resource]:
+	var all_resources: Dictionary[String, Resource] = _get_cached_instance().loader._loadedFiles.duplicate()
 
-	var cache_resources = _get_cached_instance()._resource_cache
-	for key in cache_resources:
+	var cache_resources: Dictionary[String, Resource] = _get_cached_instance()._resource_cache
+	for key: String in cache_resources:
 		if not all_resources.has(key):
 			all_resources[key] = cache_resources[key]
 	
@@ -292,7 +294,7 @@ func execute_task_in_pool(task_func: Callable, task_data: Dictionary = {}) -> vo
 		task_func.call(task_data)
 		return
 
-	var task = {
+	var task: Dictionary = {
 		"function": task_func,
 		"data": task_data,
 		"thread_index": -1
@@ -305,11 +307,11 @@ func _process_task_queue() -> void:
 	if _task_queue.is_empty() or _active_tasks >= _thread_pool_size:
 		return
 
-	var task = _task_queue.pop_front()
+	var task: Dictionary = _task_queue.pop_front()
 	
-	var available_thread_index = -1
-	for i in range(_thread_pool_size):
-		if _thread_pool[i] and _thread_pool[i].is_active() == false:
+	var available_thread_index: int = -1
+	for i: int in range(_thread_pool_size):
+		if _thread_pool[i] and _thread_pool[i].is_started() == false:
 			available_thread_index = i
 			break
 
@@ -320,14 +322,12 @@ func _process_task_queue() -> void:
 	task.thread_index = available_thread_index
 	_active_tasks += 1
 
-	var thread_func = func(data):
-		var task_data = data["task"]
-		task_data["function"].call(task_data["data"])
+	var thread_func: Callable = func(inner_task: Dictionary) -> void:
+		inner_task["function"].call(inner_task["data"])
 		_active_tasks -= 1
 		_process_task_queue()
 
-	var task_data = {"task": task}
-	_thread_pool[available_thread_index].start(thread_func, task_data)
+	_thread_pool[available_thread_index].start(thread_func.bind(task))
 
 func get_thread_pool_stats() -> Dictionary:
 	return {
@@ -354,18 +354,18 @@ func stop_thread_pool() -> void:
 		OS.delay_msec(10)
 
 func set_performance_config(config: Dictionary) -> void:
-	for key in config:
+	for key: String in config:
 		if performance_config.has(key):
 			performance_config[key] = config[key]
 
 func get_performance_config() -> Dictionary:
 	return performance_config.duplicate()
 
-func update_performance_setting(key: String, value) -> void:
+func update_performance_setting(key: String, value: Variant) -> void:
 	if performance_config.has(key):
 		performance_config[key] = value
 	else:
 		push_warning("Unknown performance setting: " + key)
 
-func get_performance_setting(key: String):
+func get_performance_setting(key: String) -> Variant:
 	return performance_config.get(key, null)

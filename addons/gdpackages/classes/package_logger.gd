@@ -11,28 +11,28 @@ static var log_level: LogLevel = LogLevel.INFO
 static var console_mode: bool = true
 static var package_filter: PackedStringArray = []
 
-static var log: Array[Dictionary] = []
+static var _log: Array[Dictionary] = []
 static var log_position: int = 0
 static var log_count: int = 0
 
-static var _entry_type_keys = EntryType.keys()
-static var _log_level_keys = LogLevel.keys()
+static var _entry_type_keys: PackedStringArray = EntryType.keys()
+static var _log_level_keys: PackedStringArray = LogLevel.keys()
 
 static func _initialize_log() -> void:
-	if log.size() == 0:
+	if _log.size() == 0:
 		for i in range(LOG_SIZE):
-			log.append({"time":"","type":EntryType.None,"level":LogLevel.INFO,"identity":"","message":"","stack":[]})
+			_log.append({"time": "", "type": EntryType.None, "level": LogLevel.INFO, "identity": "", "message": "", "stack": []})
 
 static func clear_log() -> void:
-	for i in range(log.size()):
-		var entry = log[i]
+	for i in range(_log.size()):
+		var entry: Dictionary = _log[i]
 		entry["time"] = ""
 		entry["type"] = EntryType.None
 		entry["level"] = LogLevel.INFO
 		entry["identity"] = ""
 		entry["message"] = ""
 		entry["stack"] = []
-		log[i] = entry
+		_log[i] = entry
 	log_position = 0
 	log_count = 0
 
@@ -44,15 +44,15 @@ static func get_stack_item_as_text(stack_item: Dictionary) -> String:
 
 static func get_log_entry_as_text(entry: Dictionary) -> String:
 	var result: String = entry.time + " [" + _log_level_keys[entry.level] + " - Package::" + entry.identity + "] " + _entry_type_keys[entry.type] + " - " + entry.message
-	for stack_item in entry.stack:
+	for stack_item: Dictionary in entry.stack:
 		result += "\n" + get_stack_item_as_text(stack_item)
 	return result
 
 static func get_log_as_text() -> String:
 	var result: String = ""
-	var total = min(log.size(), log_count)
+	var total: int = mini(_log.size(), log_count)
 	for i in range(total):
-		var entry = log[i]
+		var entry: Dictionary = _log[i]
 		result += "\n" + get_log_entry_as_text(entry)
 	return result
 
@@ -66,7 +66,7 @@ static func print_entry(entry: Dictionary) -> void:
 			print(get_log_entry_as_text(entry))
 
 static func print_log() -> void:
-	for entry in log:
+	for entry in _log:
 		print_entry(entry)
 
 static func _should_log_package(identity: String) -> bool:
@@ -80,16 +80,16 @@ static func log_entry(type: EntryType, level: LogLevel, identity: String, messag
 	
 	_initialize_log()
 	
-	var entry = log[log_position]
+	var entry: Dictionary = _log[log_position]
 	entry["time"] = get_timestamp()
 	entry["type"] = type
 	entry["level"] = level
 	entry["identity"] = identity
 	entry["message"] = message
 	entry["stack"] = stack
-	log[log_position] = entry
+	_log[log_position] = entry
 	if console_mode:
-		print_entry(log[log_position])
+		print_entry(_log[log_position])
 	log_position = (log_position + 1) % LOG_SIZE
 	log_count += 1
 
@@ -137,6 +137,6 @@ static func save_log(file_path: String) -> Error:
 	return FileAccess.get_open_error()
 
 static func _static_init() -> void:
-	log.clear()
+	_log.clear()
 	for i in range(LOG_SIZE):
-		log.append({"time":"","type":EntryType.None,"level":LogLevel.INFO,"identity":"","message":"","stack":[]})
+		_log.append({"time":"","type":EntryType.None,"level":LogLevel.INFO,"identity":"","message":"","stack":[]})

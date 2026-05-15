@@ -1,4 +1,5 @@
 extends PackageAdapter
+class_name TestAdapter # ИСПРАВЛЕНО: Чтобы вызывать методы адаптера без ошибок типизации, нужен class_name
 
 const PackageEventBus = preload("res://addons/gdpackages/classes/package_event_bus.gd")
 

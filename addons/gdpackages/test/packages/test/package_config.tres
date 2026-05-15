@@ -1,12 +1,11 @@
-[gd_resource type="Resource" script_class="PackageConfig" format=3 uid="uid://cxwvr3xw25uux"]
+[gd_resource type="Resource" script_class="PackageConfig" format=3 uid="uid://ctia7yeu6ym0l"]
 
-[ext_resource type="Script" uid="uid://dekpakvtprd61" path="res://addons/gdpackages/classes/package_config.gd" id="1_4f011"]
+[ext_resource type="Script" uid="uid://bfvcqctpy44rr" path="res://addons/gdpackages/classes/package_config.gd" id="1_lr1tf"]
 
 [resource]
-script = ExtResource("1_4f011")
+script = ExtResource("1_lr1tf")
 name = "test"
 version = "v1.0"
 script_path = "test.gd"
 adapter_path = "test_adapter.gd"
 core_path = "src/test_core.gd"
-dependencies = []

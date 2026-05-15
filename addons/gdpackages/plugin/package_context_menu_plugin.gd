@@ -5,11 +5,11 @@ signal pressed
 signal create_src_script
 
 func _popup_menu(paths: PackedStringArray) -> void:
-	var is_src_folder = false
+	var is_src_folder: bool = false
 	if paths.size() > 0:
-		var path = paths[0]
+		var path: String = paths[0]
 		if path.get_file() == "src":
-			var package_dir = path.get_base_dir()
+			var package_dir: String = path.get_base_dir()
 			if FileAccess.file_exists(package_dir.path_join("package.json")) or FileAccess.file_exists(package_dir.path_join("package_config.tres")):
 				is_src_folder = true
 	
